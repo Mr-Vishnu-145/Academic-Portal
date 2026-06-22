@@ -1,0 +1,506 @@
+import React, { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, Save } from 'lucide-react';
+
+const HodLayout = ({ children }) => {
+  const { user } = useAuth();
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+      <div className="portal-content">
+        <div className="content-header">
+          <div>
+            <h1 style={{ fontSize: '32px', fontWeight: '800' }}>Academic Portal</h1>
+            <p style={{ color: 'var(--text-secondary)' }}>HOD Dashboard | Department: {user?.departmentCode}</p>
+          </div>
+          <div className="user-profile-summary">
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: '600' }}>{user?.name}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Head of Department</div>
+            </div>
+            <div className="avatar">{user?.name ? user.name.charAt(0) : 'H'}</div>
+          </div>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// 1. HOD Dashboard
+const HodDashboard = () => {
+  const { authenticatedFetch } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    authenticatedFetch('/api/hod/dashboard')
+      .then(res => res.json())
+      .then(data => {
+        setStats(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div>Loading HOD dashboard...</div>;
+
+  return (
+    <div>
+      <div className="dashboard-grid">
+        <div className="glass-card stat-card">
+          <div className="stat-icon stat-icon-primary"><Users size={24} /></div>
+          <div>
+            <div className="stat-number">{stats?.studentsCount}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Total Students (All Years)</div>
+          </div>
+        </div>
+        <div className="glass-card stat-card">
+          <div className="stat-icon stat-icon-accent"><Briefcase size={24} /></div>
+          <div>
+            <div className="stat-number">{stats?.staffCount}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Department Staff members</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="glass-card">
+        <h3 style={{ marginBottom: '16px' }}>Department Scope Management</h3>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          As HOD of the <strong>{stats?.departmentName} ({stats?.departmentCode})</strong>, you are responsible for monitoring student records, managing staff roles and duties, and finalizing semester results publication to calculate student GPAs.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// 2. Manage Staff
+const ManageStaffPage = () => {
+  const { authenticatedFetch } = useAuth();
+  const [staffList, setStaffList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addModal, setAddModal] = useState(false);
+  
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('password');
+  const [role, setRole] = useState('STAFF');
+  const [year, setYear] = useState('2');
+  const [registerNumber, setRegisterNumber] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchStaff = () => {
+    authenticatedFetch('/api/hod/staff')
+      .then(res => res.json())
+      .then(data => {
+        setStaffList(data);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    const endpoint = role === 'STAFF' ? '/api/hod/staff/add' : '/api/hod/students';
+    const payload = role === 'STAFF' 
+      ? { name, email, phone, password, year: parseInt(year) }
+      : { name, email, phone, password, year: parseInt(year), registerNumber };
+
+    try {
+      const response = await authenticatedFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setAddModal(false);
+        setName('');
+        setEmail('');
+        setPhone('');
+        setRegisterNumber('');
+        fetchStaff();
+      } else {
+        setError(data.error || 'Failed to register user');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div>Loading staff list...</div>;
+
+  return (
+    <div className="glass-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2>Faculty & Staff Registry</h2>
+        <button className="btn btn-primary" onClick={() => { setRole('STAFF'); setAddModal(true); }} style={{ display: 'flex', gap: '8px' }}>
+          <PlusCircle size={18} /> Add Faculty
+        </button>
+      </div>
+
+      <div className="table-container">
+        <table className="portal-table">
+          <thead>
+            <tr>
+              <th>Staff Code</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Assigned Year</th>
+            </tr>
+          </thead>
+          <tbody>
+            {staffList.map((s) => (
+              <tr key={s.id}>
+                <td style={{ fontWeight: '600' }}>{s.staffIdCode}</td>
+                <td>{s.name}</td>
+                <td>{s.email}</td>
+                <td>{s.phone}</td>
+                <td style={{ fontWeight: '600', color: 'var(--primary)' }}>Year {s.year}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {addModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyCenter: 'center', zIndex: 100, justifyContent: 'center' }}>
+          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)' }}>
+            <h3 style={{ marginBottom: '20px' }}>Register Department User</h3>
+            {error && (
+              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', color: '#f87171' }}>
+                <span>{error}</span>
+              </div>
+            )}
+            <form onSubmit={handleAdd}>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <input type="text" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Role</label>
+                <select className="form-control" value={role} onChange={(e) => setRole(e.target.value)}>
+                  <option value="STAFF">Staff</option>
+                  <option value="STUDENT">Student</option>
+                </select>
+              </div>
+
+              {role === 'STUDENT' ? (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Study Year</label>
+                    <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
+                      <option value="1">Year 1</option>
+                      <option value="2">Year 2</option>
+                      <option value="3">Year 3</option>
+                      <option value="4">Year 4</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Register Number</label>
+                    <input type="text" className="form-control" placeholder="REGXXXXXX" value={registerNumber} onChange={(e) => setRegisterNumber(e.target.value)} required />
+                  </div>
+                </>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Assigned Year</label>
+                  <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
+                    <option value="1">Year 1</option>
+                    <option value="2">Year 2</option>
+                    <option value="3">Year 3</option>
+                    <option value="4">Year 4</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label">Default Password</label>
+                <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
+                  {saving ? 'Saving...' : 'Register'}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setError(''); }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 3. Dept Students
+const DeptStudentsPage = () => {
+  const { authenticatedFetch } = useAuth();
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addModal, setAddModal] = useState(false);
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('password');
+  const [role, setRole] = useState('STUDENT');
+  const [year, setYear] = useState('2');
+  const [registerNumber, setRegisterNumber] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchStudents = () => {
+    authenticatedFetch('/api/hod/students')
+      .then(res => res.json())
+      .then(data => {
+        setStudents(data);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    const endpoint = role === 'STAFF' ? '/api/hod/staff/add' : '/api/hod/students';
+    const payload = role === 'STAFF' 
+      ? { name, email, phone, password, year: parseInt(year) }
+      : { name, email, phone, password, year: parseInt(year), registerNumber };
+
+    try {
+      const response = await authenticatedFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setAddModal(false);
+        setName('');
+        setEmail('');
+        setPhone('');
+        setRegisterNumber('');
+        fetchStudents();
+      } else {
+        setError(data.error || 'Failed to register user');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div>Loading department students...</div>;
+
+  return (
+    <div className="glass-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2>Department Student Demographics</h2>
+        <button className="btn btn-primary" onClick={() => { setRole('STUDENT'); setAddModal(true); }} style={{ display: 'flex', gap: '8px' }}>
+          <PlusCircle size={18} /> Add Student
+        </button>
+      </div>
+
+      <div className="table-container">
+        <table className="portal-table">
+          <thead>
+            <tr>
+              <th>Register Number</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Year</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((s) => (
+              <tr key={s.id}>
+                <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
+                <td>{s.name}</td>
+                <td>{s.email}</td>
+                <td>Year {s.year}</td>
+                <td>
+                  <span className="badge badge-success">Active</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {addModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyCenter: 'center', zIndex: 100, justifyContent: 'center' }}>
+          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)' }}>
+            <h3 style={{ marginBottom: '20px' }}>Register Department User</h3>
+            {error && (
+              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', color: '#f87171' }}>
+                <span>{error}</span>
+              </div>
+            )}
+            <form onSubmit={handleAdd}>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <input type="text" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Role</label>
+                <select className="form-control" value={role} onChange={(e) => setRole(e.target.value)}>
+                  <option value="STUDENT">Student</option>
+                  <option value="STAFF">Staff</option>
+                </select>
+              </div>
+
+              {role === 'STUDENT' ? (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Study Year</label>
+                    <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
+                      <option value="1">Year 1</option>
+                      <option value="2">Year 2</option>
+                      <option value="3">Year 3</option>
+                      <option value="4">Year 4</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Register Number</label>
+                    <input type="text" className="form-control" placeholder="REGXXXXXX" value={registerNumber} onChange={(e) => setRegisterNumber(e.target.value)} required />
+                  </div>
+                </>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Assigned Year</label>
+                  <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
+                    <option value="1">Year 1</option>
+                    <option value="2">Year 2</option>
+                    <option value="3">Year 3</option>
+                    <option value="4">Year 4</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label">Default Password</label>
+                <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
+                  {saving ? 'Saving...' : 'Register'}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setError(''); }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 4. Publish Results
+const PublishResultsPage = () => {
+  const { authenticatedFetch, user } = useAuth();
+  const [semester, setSemester] = useState('4');
+  const [publishing, setPublishing] = useState(false);
+
+  const handlePublish = async (e) => {
+    e.preventDefault();
+    if (!window.confirm(`Are you sure you want to publish results for Semester ${semester}? This will update CGPA tables.`)) {
+      return;
+    }
+    
+    setPublishing(true);
+    try {
+      const response = await authenticatedFetch('/api/admin/results/publish', {
+        method: 'POST',
+        body: JSON.stringify({
+          departmentId: user.departmentId,
+          semester: semester
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message || 'Results published successfully.');
+      } else {
+        alert(data.error || 'Failed to publish results.');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  return (
+    <div className="glass-card" style={{ maxWidth: '550px' }}>
+      <h2>Publish Academic Results</h2>
+      <div style={{ padding: '16px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', borderRadius: '8px', color: '#fcd34d', fontSize: '14px', margin: '16px 0 24px' }}>
+        <strong>Warning:</strong> Publishing grades makes them instantly visible on Student results tabs and triggers automated weighted GPA calculations.
+      </div>
+      <form onSubmit={handlePublish}>
+        <div className="form-group" style={{ marginBottom: '24px' }}>
+          <label className="form-label">Semester</label>
+          <select className="form-control" value={semester} onChange={(e) => setSemester(e.target.value)}>
+            <option value="1">Semester 1</option>
+            <option value="2">Semester 2</option>
+            <option value="3">Semester 3</option>
+            <option value="4">Semester 4</option>
+            <option value="5">Semester 5</option>
+            <option value="6">Semester 6</option>
+            <option value="7">Semester 7</option>
+            <option value="8">Semester 8</option>
+          </select>
+        </div>
+        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={publishing}>
+          {publishing ? 'Publishing...' : 'Publish Grades & Calculate GPA'}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const HodRoutes = () => {
+  return (
+    <HodLayout>
+      <Routes>
+        <Route path="dashboard" element={<HodDashboard />} />
+        <Route path="staff" element={<ManageStaffPage />} />
+        <Route path="students" element={<DeptStudentsPage />} />
+        <Route path="results" element={<PublishResultsPage />} />
+      </Routes>
+    </HodLayout>
+  );
+};
+
+export default HodRoutes;
