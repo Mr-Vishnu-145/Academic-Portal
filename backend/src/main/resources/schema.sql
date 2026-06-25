@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS cgpa_summary;
 DROP TABLE IF EXISTS semester_results;
 DROP TABLE IF EXISTS attendance;
 DROP TABLE IF EXISTS staff_assignments;
+DROP TABLE IF EXISTS exam_schedules;
 
 -- Drop old legacy tables if they exist to clear foreign keys
 DROP TABLE IF EXISTS internal_marks;
@@ -21,6 +22,7 @@ DROP TABLE IF EXISTS arrears;
 
 DROP TABLE IF EXISTS subjects;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
 DROP TABLE IF EXISTS departments;
 
 -- ============ CORE ============
@@ -31,19 +33,26 @@ CREATE TABLE departments (
   code            VARCHAR(20) NOT NULL UNIQUE
 );
 
+CREATE TABLE roles (
+  id              INT PRIMARY KEY AUTO_INCREMENT,
+  name            VARCHAR(50) NOT NULL UNIQUE
+);
+
 CREATE TABLE users (
   id              INT PRIMARY KEY AUTO_INCREMENT,
   name            VARCHAR(100) NOT NULL,
   email           VARCHAR(100) UNIQUE NOT NULL,
   phone           VARCHAR(15),
   password_hash   VARCHAR(255) NOT NULL,
-  role            VARCHAR(20) NOT NULL, -- STUDENT, STAFF, HOD, ADMIN
+  role_id         INT NOT NULL,
   department_id   INT,
   study_year      INT NULL,              -- only for students: 1, 2, 3, 4
+  section         VARCHAR(10) NULL,      -- only for students: A, B, C etc.
   register_number VARCHAR(20) UNIQUE NULL, -- students only
   staff_id_code   VARCHAR(20) UNIQUE NULL, -- staff/hod only
   is_active       BOOLEAN DEFAULT TRUE,
   created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (role_id) REFERENCES roles(id),
   FOREIGN KEY (department_id) REFERENCES departments(id)
 );
 
@@ -67,6 +76,28 @@ CREATE TABLE staff_assignments (
   FOREIGN KEY (department_id) REFERENCES departments(id),
   FOREIGN KEY (subject_id) REFERENCES subjects(id)
 );
+
+CREATE TABLE exam_schedules (
+  id              INT PRIMARY KEY AUTO_INCREMENT,
+  subject_id      INT NOT NULL,
+  exam_date       DATE NOT NULL,
+  exam_time       TIME NOT NULL,
+  hall_number     VARCHAR(20) NOT NULL,
+  uploaded_by     INT NOT NULL,
+  assignment_type VARCHAR(20) NOT NULL, -- INDIVIDUAL, YEAR, SECTION, DEPARTMENT
+  department_id   INT NOT NULL,
+  study_year      INT NULL,
+  section         VARCHAR(10) NULL,
+  student_id      INT NULL,
+  status          VARCHAR(20) NOT NULL DEFAULT 'UPCOMING', -- UPCOMING, COMPLETED, CANCELLED
+  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id),
+  FOREIGN KEY (uploaded_by) REFERENCES users(id),
+  FOREIGN KEY (department_id) REFERENCES departments(id),
+  FOREIGN KEY (student_id) REFERENCES users(id)
+);
+
+CREATE INDEX idx_exam_schedules_role_scope ON exam_schedules(department_id, study_year, section, student_id);
 
 -- ============ ATTENDANCE ============
 
@@ -210,7 +241,7 @@ CREATE TABLE notifications (
 );
 
 -- ============ INDEXES ============
-CREATE INDEX idx_users_role_dept ON users(role, department_id);
+CREATE INDEX idx_users_role_dept ON users(role_id, department_id);
 CREATE INDEX idx_attendance_student_date ON attendance(student_id, class_date);
 CREATE INDEX idx_assessments_dept_year_type ON assessments(department_id, study_year, type);
 CREATE INDEX idx_assessments_subject_type ON assessments(subject_id, type);

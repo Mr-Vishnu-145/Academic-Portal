@@ -3,25 +3,33 @@ INSERT INTO departments (id, name, code) VALUES
 (1, 'Computer Science and Engineering', 'CSE'),
 (2, 'Electronics and Communication Engineering', 'ECE');
 
+-- Seed Roles
+INSERT INTO roles (id, name) VALUES
+(1, 'STUDENT'),
+(2, 'STAFF'),
+(3, 'HOD'),
+(4, 'ADMIN');
+
 -- Seed Users (Password is 'password' BCrypt hashed: $2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO)
-INSERT INTO users (id, name, email, phone, password_hash, role, department_id, study_year, register_number, staff_id_code, is_active, created_at) VALUES
+INSERT INTO users (id, name, email, phone, password_hash, role_id, department_id, study_year, section, register_number, staff_id_code, is_active, created_at) VALUES
 -- Admin
-(1, 'System Administrator', 'admin@portal.edu', '9876543210', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 'ADMIN', NULL, NULL, NULL, 'ADM001', TRUE, CURRENT_TIMESTAMP),
+(1, 'System Administrator', 'admin@portal.edu', '9876543210', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 4, NULL, NULL, NULL, NULL, 'ADM001', TRUE, CURRENT_TIMESTAMP),
 -- HOD for CSE
-(2, 'Dr. Sarah Connor', 'hod.cse@portal.edu', '9876543211', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 'HOD', 1, NULL, NULL, 'HODCSE01', TRUE, CURRENT_TIMESTAMP),
+(2, 'Dr. Sarah Connor', 'hod.cse@portal.edu', '9876543211', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 3, 1, NULL, NULL, NULL, 'HODCSE01', TRUE, CURRENT_TIMESTAMP),
 -- Staff for CSE Year 2
-(3, 'Prof. Alan Turing', 'staff.cse2@portal.edu', '9876543212', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 'STAFF', 1, 2, NULL, 'STFCSE02', TRUE, CURRENT_TIMESTAMP),
+(3, 'Prof. Alan Turing', 'staff.cse2@portal.edu', '9876543212', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 2, 1, 2, NULL, NULL, 'STFCSE02', TRUE, CURRENT_TIMESTAMP),
 -- Student 1 (CSE, Year 2)
-(4, 'Grace Hopper', 'student.cse2@portal.edu', '9876543213', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 'STUDENT', 1, 2, 'REG2024CSE001', NULL, TRUE, CURRENT_TIMESTAMP),
+(4, 'Grace Hopper', 'student.cse2@portal.edu', '9876543213', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 1, 1, 2, 'A', 'REG2024CSE001', NULL, TRUE, CURRENT_TIMESTAMP),
 -- Student 2 (CSE, Year 3)
-(5, 'Ada Lovelace', 'student.cse3@portal.edu', '9876543214', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 'STUDENT', 1, 3, 'REG2023CSE001', NULL, TRUE, CURRENT_TIMESTAMP);
+(5, 'Ada Lovelace', 'student.cse3@portal.edu', '9876543214', '$2a$10$JxLj0pInJT4NHob3r9pBwuCfZjozCSbaWlAB/O89I/zoB0skcnqiO', 1, 1, 3, 'B', 'REG2023CSE001', NULL, TRUE, CURRENT_TIMESTAMP);
 
 -- Seed Subjects
 INSERT INTO subjects (id, name, code, department_id, semester, credits) VALUES
 (1, 'Data Structures and Algorithms', 'CSE301', 1, 3, 4),
 (2, 'Database Management Systems', 'CSE401', 1, 4, 4),
 (3, 'Operating Systems', 'CSE402', 1, 4, 3),
-(4, 'Computer Networks', 'CSE403', 1, 4, 4);
+(4, 'Computer Networks', 'CSE403', 1, 4, 4),
+(5, 'Basic Electronics', 'ECE301', 2, 3, 3);
 
 -- Seed Staff Assignments
 INSERT INTO staff_assignments (id, staff_id, department_id, year_assigned, subject_id) VALUES
@@ -81,3 +89,14 @@ INSERT INTO fee_payments (id, student_id, fee_structure_id, amount_paid, payment
 INSERT INTO notifications (id, user_id, type, title, message, reference_id, is_read, send_at, created_at) VALUES
 (1, 4, 'GENERAL', 'Welcome to the Academic Portal', 'You can now view fees, results, and attendance.', NULL, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (2, 4, 'ASSIGNMENT', 'New Assignment: SQL Query Lab Exercise', 'Due date is 2026-06-25.', 1, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Seed Exam Schedules
+INSERT INTO exam_schedules (id, subject_id, exam_date, exam_time, hall_number, uploaded_by, assignment_type, department_id, study_year, section, student_id, status, created_at) VALUES
+-- Type 2: Year-wise DBMS exam for CSE Year 2
+(1, 2, '2026-06-30', '10:00:00', 'LH 301', 3, 'YEAR', 1, 2, NULL, NULL, 'UPCOMING', CURRENT_TIMESTAMP),
+-- Type 3: Section-wise OS exam for CSE Year 2 Section A
+(2, 3, '2026-07-02', '14:00:00', 'LH 302', 3, 'SECTION', 1, 2, 'A', NULL, 'UPCOMING', CURRENT_TIMESTAMP),
+-- Type 1: Individual Student exam for Grace Hopper (student id = 4)
+(3, 4, '2026-07-05', '10:00:00', 'Lab 1', 3, 'INDIVIDUAL', 1, 2, 'A', 4, 'UPCOMING', CURRENT_TIMESTAMP),
+-- Seed ECE Year-wide exam (to verify CSE student doesn't see it)
+(4, 5, '2026-07-08', '09:30:00', 'LH 401', 1, 'YEAR', 2, 2, NULL, NULL, 'UPCOMING', CURRENT_TIMESTAMP);

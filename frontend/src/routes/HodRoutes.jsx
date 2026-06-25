@@ -1,17 +1,67 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Profile from '../pages/Profile';
+import ExamScheduleManager from '../pages/ExamScheduleManager';
 import { Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, Save } from 'lucide-react';
 
 const HodLayout = ({ children }) => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  const getHeaderInfo = (pathname) => {
+    const path = pathname.toLowerCase().replace(/\/$/, '');
+    if (path.endsWith('/dashboard')) {
+      return {
+        title: 'Dashboard',
+        subtitle: `Welcome back, Dr. ${user?.name ? user.name.split(' ').pop() : 'Connor'}! Department management overview.`
+      };
+    }
+    if (path.endsWith('/profile')) {
+      return {
+        title: 'My Profile',
+        subtitle: 'View and manage HOD profile details.'
+      };
+    }
+    if (path.endsWith('/students')) {
+      return {
+        title: 'Department Students',
+        subtitle: `View and monitor students in the ${user?.departmentCode || 'CSE'} department.`
+      };
+    }
+    if (path.endsWith('/staff')) {
+      return {
+        title: 'Staff Directory',
+        subtitle: 'Register new staff members and assign year permissions.'
+      };
+    }
+    if (path.endsWith('/exams')) {
+      return {
+        title: 'Exam Schedule Tracker',
+        subtitle: 'Review department-wide exam schedules and timetables.'
+      };
+    }
+    if (path.endsWith('/results')) {
+      return {
+        title: 'Publish Results',
+        subtitle: 'Review and release student semester exam results to calculate CGPA.'
+      };
+    }
+    return {
+      title: 'HOD Portal',
+      subtitle: `Welcome, ${user?.name}`
+    };
+  };
+
+  const headerInfo = getHeaderInfo(location.pathname);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <div className="portal-content">
         <div className="content-header">
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '800' }}>Academic Portal</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>HOD Dashboard | Department: {user?.departmentCode}</p>
+          <div className="page-title-group">
+            <h1 className="page-title">{headerInfo.title}</h1>
+            <p className="page-subtitle">{headerInfo.subtitle}</p>
           </div>
           <div className="user-profile-summary">
             <div style={{ textAlign: 'right' }}>
@@ -35,9 +85,16 @@ const HodDashboard = () => {
 
   useEffect(() => {
     authenticatedFetch('/api/hod/dashboard')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch HOD stats');
+        return res.json();
+      })
       .then(data => {
         setStats(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
         setLoading(false);
       });
   }, []);
@@ -495,8 +552,10 @@ const HodRoutes = () => {
     <HodLayout>
       <Routes>
         <Route path="dashboard" element={<HodDashboard />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="staff" element={<ManageStaffPage />} />
         <Route path="students" element={<DeptStudentsPage />} />
+        <Route path="exams" element={<ExamScheduleManager />} />
         <Route path="results" element={<PublishResultsPage />} />
       </Routes>
     </HodLayout>

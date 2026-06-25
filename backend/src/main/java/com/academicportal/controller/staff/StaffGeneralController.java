@@ -40,6 +40,14 @@ public class StaffGeneralController {
                     .stream()
                     .map(sa -> sa.getSubject())
                     .collect(Collectors.toList());
+            if (subjects.isEmpty() && user.getDepartment() != null && user.getYear() != null) {
+                int semester1 = 2 * user.getYear() - 1;
+                int semester2 = 2 * user.getYear();
+                subjects = subjectRepository.findByDepartmentId(user.getDepartment().getId())
+                        .stream()
+                        .filter(sub -> sub.getSemester() == semester1 || sub.getSemester() == semester2)
+                        .collect(Collectors.toList());
+            }
             return ResponseEntity.ok(subjects);
         }
     }

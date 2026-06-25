@@ -1,17 +1,82 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Profile from '../pages/Profile';
+import ExamScheduleManager from '../pages/ExamScheduleManager';
 import { Users, CheckSquare, Award, BookOpen, Calendar, HelpCircle, Save, PlusCircle } from 'lucide-react';
+
+const getCurrentTimeString = () => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
 
 const StaffLayout = ({ children }) => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  const getHeaderInfo = (pathname) => {
+    const path = pathname.toLowerCase().replace(/\/$/, '');
+    if (path.endsWith('/dashboard')) {
+      return {
+        title: 'Dashboard',
+        subtitle: `Welcome back, ${user?.name}! Here is your teaching overview.`
+      };
+    }
+    if (path.endsWith('/profile')) {
+      return {
+        title: 'My Profile',
+        subtitle: 'View and manage your academic profile details.'
+      };
+    }
+    if (path.endsWith('/students')) {
+      return {
+        title: 'Class Student Roster',
+        subtitle: 'Manage and register students assigned to your classes.'
+      };
+    }
+    if (path.endsWith('/attendance')) {
+      return {
+        title: 'Daily Attendance',
+        subtitle: 'Log and track student class attendance.'
+      };
+    }
+    if (path.endsWith('/marks')) {
+      return {
+        title: 'Upload Test Marks',
+        subtitle: 'Upload and grade student internal tests and CAT exams.'
+      };
+    }
+    if (path.endsWith('/assignments')) {
+      return {
+        title: 'Assignments Manager',
+        subtitle: 'Create, edit, and post assignment briefs for students.'
+      };
+    }
+    if (path.endsWith('/exams')) {
+      return {
+        title: 'Exam Scheduler',
+        subtitle: 'Configure examination timings, hall numbers, and dates.'
+      };
+    }
+    return {
+      title: 'Staff Portal',
+      subtitle: `Welcome, ${user?.name}`
+    };
+  };
+
+  const headerInfo = getHeaderInfo(location.pathname);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <div className="portal-content">
         <div className="content-header">
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '800' }}>Academic Portal</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Staff Access | Department: {user?.departmentCode} - Year {user?.year}</p>
+          <div className="page-title-group">
+            <h1 className="page-title">{headerInfo.title}</h1>
+            <p className="page-subtitle">{headerInfo.subtitle}</p>
           </div>
           <div className="user-profile-summary">
             <div style={{ textAlign: 'right' }}>
@@ -35,9 +100,16 @@ const StaffDashboard = () => {
 
   useEffect(() => {
     authenticatedFetch('/api/staff/dashboard')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch staff stats');
+        return res.json();
+      })
       .then(data => {
         setStats(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
         setLoading(false);
       });
   }, []);
@@ -236,7 +308,7 @@ const MarkAttendancePage = () => {
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [selectedSub, setSelectedSub] = useState('');
-  const [classDate, setClassDate] = useState(new Date().toISOString().split('T')[0]);
+  const [classDate, setClassDate] = useState(getTodayDateString);
   const [statuses, setStatuses] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -301,7 +373,13 @@ const MarkAttendancePage = () => {
         </div>
         <div className="form-group" style={{ width: '200px' }}>
           <label className="form-label">Class Date</label>
-          <input type="date" className="form-control" value={classDate} onChange={(e) => setClassDate(e.target.value)} />
+          <input 
+            type="date" 
+            className="form-control" 
+            value={classDate} 
+            min={getTodayDateString()} 
+            onChange={(e) => setClassDate(e.target.value)} 
+          />
         </div>
       </div>
 
@@ -447,7 +525,7 @@ const ManageAssignmentsPage = () => {
   const [subjects, setSubjects] = useState([]);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(getTodayDateString);
   const [maxMarks, setMaxMarks] = useState('10');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -512,7 +590,14 @@ const ManageAssignmentsPage = () => {
         <div style={{ display: 'flex', gap: '16px' }}>
           <div className="form-group" style={{ flexGrow: 1 }}>
             <label className="form-label">Due Date</label>
-            <input type="date" className="form-control" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
+            <input 
+              type="date" 
+              className="form-control" 
+              value={dueDate} 
+              min={getTodayDateString()} 
+              onChange={(e) => setDueDate(e.target.value)} 
+              required 
+            />
           </div>
           <div className="form-group" style={{ flexGrow: 1 }}>
             <label className="form-label">Max Marks</label>
@@ -533,8 +618,8 @@ const SetExamSchedulePage = () => {
   const [selectedSub, setSelectedSub] = useState('');
   const [subjects, setSubjects] = useState([]);
   const [examType, setExamType] = useState('CAT1');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('09:30');
+  const [date, setDate] = useState(getTodayDateString);
+  const [time, setTime] = useState(getCurrentTimeString);
   const [hall, setHall] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -600,11 +685,25 @@ const SetExamSchedulePage = () => {
         <div style={{ display: 'flex', gap: '16px' }}>
           <div className="form-group" style={{ flexGrow: 1 }}>
             <label className="form-label">Exam Date</label>
-            <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <input 
+              type="date" 
+              className="form-control" 
+              value={date} 
+              min={getTodayDateString()} 
+              onChange={(e) => setDate(e.target.value)} 
+              required 
+            />
           </div>
           <div className="form-group" style={{ flexGrow: 1 }}>
             <label className="form-label">Time Slot</label>
-            <input type="time" className="form-control" value={time} onChange={(e) => setTime(e.target.value)} required />
+            <input 
+              type="time" 
+              className="form-control" 
+              value={time} 
+              min={date === getTodayDateString() ? getCurrentTimeString() : undefined} 
+              onChange={(e) => setTime(e.target.value)} 
+              required 
+            />
           </div>
         </div>
         <div className="form-group">
@@ -624,11 +723,12 @@ const StaffRoutes = () => {
     <StaffLayout>
       <Routes>
         <Route path="dashboard" element={<StaffDashboard />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="students" element={<MyStudentsPage />} />
         <Route path="attendance" element={<MarkAttendancePage />} />
         <Route path="marks" element={<UploadMarksPage />} />
         <Route path="assignments" element={<ManageAssignmentsPage />} />
-        <Route path="exams" element={<SetExamSchedulePage />} />
+        <Route path="exams" element={<ExamScheduleManager />} />
       </Routes>
     </StaffLayout>
   );

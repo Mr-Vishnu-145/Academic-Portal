@@ -28,8 +28,7 @@ public class User {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "role_id", nullable = false)
     private Role role;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -38,6 +37,9 @@ public class User {
 
     @Column(name = "study_year")
     private Integer year; // only for students: 1, 2, 3, 4
+
+    @Column(name = "section", length = 10)
+    private String section; // only for students: A, B, C etc.
 
     @Column(name = "register_number", unique = true, length = 20)
     private String registerNumber; // students only

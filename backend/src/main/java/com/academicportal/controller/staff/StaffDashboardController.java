@@ -3,6 +3,7 @@ package com.academicportal.controller.staff;
 import com.academicportal.entity.*;
 import com.academicportal.repository.AssessmentRepository;
 import com.academicportal.repository.StaffAssignmentRepository;
+import com.academicportal.repository.SubjectRepository;
 import com.academicportal.service.AccessScopeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,13 +18,16 @@ public class StaffDashboardController {
     private final StaffAssignmentRepository staffAssignmentRepository;
     private final AssessmentRepository assessmentRepository;
     private final AccessScopeService accessScopeService;
+    private final SubjectRepository subjectRepository;
 
     public StaffDashboardController(StaffAssignmentRepository staffAssignmentRepository,
                                     AssessmentRepository assessmentRepository,
-                                    AccessScopeService accessScopeService) {
+                                    AccessScopeService accessScopeService,
+                                    SubjectRepository subjectRepository) {
         this.staffAssignmentRepository = staffAssignmentRepository;
         this.assessmentRepository = assessmentRepository;
         this.accessScopeService = accessScopeService;
+        this.subjectRepository = subjectRepository;
     }
 
     @GetMapping
@@ -33,6 +37,14 @@ public class StaffDashboardController {
         }
 
         int subjectsCount = staffAssignmentRepository.findByStaffId(staff.getId()).size();
+        if (subjectsCount == 0 && staff.getDepartment() != null && staff.getYear() != null) {
+            int semester1 = 2 * staff.getYear() - 1;
+            int semester2 = 2 * staff.getYear();
+            subjectsCount = (int) subjectRepository.findByDepartmentId(staff.getDepartment().getId())
+                    .stream()
+                    .filter(sub -> sub.getSemester() == semester1 || sub.getSemester() == semester2)
+                    .count();
+        }
         int studentsCount = accessScopeService.getAccessibleStudents(staff).size();
         int assignmentsCount = assessmentRepository.findByDepartmentIdAndStudyYearAndType(
                 staff.getDepartment().getId(), staff.getYear() != null ? staff.getYear() : 1, AssessmentType.ASSIGNMENT).size();

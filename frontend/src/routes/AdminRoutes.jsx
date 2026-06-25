@@ -1,17 +1,74 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Users, Building, CreditCard, ShieldCheck, Settings, PlusCircle, Trash, RefreshCw } from 'lucide-react';
+import ExamScheduleManager from '../pages/ExamScheduleManager';
+
+const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
 
 const AdminLayout = ({ children }) => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  const getHeaderInfo = (pathname) => {
+    const path = pathname.toLowerCase().replace(/\/$/, '');
+    if (path.endsWith('/dashboard')) {
+      return {
+        title: 'Dashboard',
+        subtitle: `Welcome, ${user?.name || 'Administrator'}! institution-wide metrics and server status.`
+      };
+    }
+    if (path.endsWith('/departments')) {
+      return {
+        title: 'Departments',
+        subtitle: 'Create, update, and manage academic departments.'
+      };
+    }
+    if (path.endsWith('/users')) {
+      return {
+        title: 'User Management',
+        subtitle: 'Create institution accounts for Students, Staff, HODs, and Admins.'
+      };
+    }
+    if (path.endsWith('/fees')) {
+      return {
+        title: 'Fee Configurations',
+        subtitle: 'Configure fee templates, tuition schedules, and track collections.'
+      };
+    }
+    if (path.endsWith('/exams')) {
+      return {
+        title: 'Exam Scheduler',
+        subtitle: 'View and override institutional examination tables.'
+      };
+    }
+    if (path.endsWith('/results')) {
+      return {
+        title: 'Release Results',
+        subtitle: 'Globally publish semester end exam grades and compute student CGPA.'
+      };
+    }
+    if (path.endsWith('/settings')) {
+      return {
+        title: 'System Settings',
+        subtitle: 'Configure institutuion settings, security rules, and database parameters.'
+      };
+    }
+    return {
+      title: 'Admin Console',
+      subtitle: `Welcome, ${user?.name}`
+    };
+  };
+
+  const headerInfo = getHeaderInfo(location.pathname);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <div className="portal-content">
         <div className="content-header">
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '800' }}>Academic Portal</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>System Administrator Console</p>
+          <div className="page-title-group">
+            <h1 className="page-title">{headerInfo.title}</h1>
+            <p className="page-subtitle">{headerInfo.subtitle}</p>
           </div>
           <div className="user-profile-summary">
             <div style={{ textAlign: 'right' }}>
@@ -35,9 +92,16 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     authenticatedFetch('/api/admin/dashboard')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch admin stats');
+        return res.json();
+      })
       .then(data => {
         setStats(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
         setLoading(false);
       });
   }, []);
@@ -414,7 +478,7 @@ const FeeManagementPage = () => {
   const [year, setYear] = useState('1');
   const [feeType, setFeeType] = useState('Tuition Fee');
   const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(getTodayDateString);
   const [loading, setLoading] = useState(true);
 
   const fetchFees = () => {
@@ -517,7 +581,14 @@ const FeeManagementPage = () => {
           </div>
           <div className="form-group" style={{ marginBottom: '24px' }}>
             <label className="form-label">Due Date</label>
-            <input type="date" className="form-control" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
+            <input 
+              type="date" 
+              className="form-control" 
+              value={dueDate} 
+              min={getTodayDateString()} 
+              onChange={(e) => setDueDate(e.target.value)} 
+              required 
+            />
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Configure Invoices</button>
         </form>
@@ -627,6 +698,7 @@ const AdminRoutes = () => {
         <Route path="departments" element={<ManageDepartmentsPage />} />
         <Route path="users" element={<ManageAllUsersPage />} />
         <Route path="fees" element={<FeeManagementPage />} />
+        <Route path="exams" element={<ExamScheduleManager />} />
         <Route path="results" element={<PublishResultsPage />} />
         <Route path="settings" element={<SystemSettingsPage />} />
       </Routes>

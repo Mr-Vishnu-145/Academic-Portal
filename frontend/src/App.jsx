@@ -1,6 +1,7 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import RoleBasedSidebar from './components/common/RoleBasedSidebar';
 import Login from './pages/Login';
@@ -9,20 +10,59 @@ import StudentRoutes from './routes/StudentRoutes';
 import StaffRoutes from './routes/StaffRoutes';
 import HodRoutes from './routes/HodRoutes';
 import AdminRoutes from './routes/AdminRoutes';
+import { Menu, Moon, Sun } from 'lucide-react';
 
 // Layout wrapper that conditionally renders the Sidebar for logged-in users
 const MainLayout = ({ children }) => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
   
-  if (!token) {
+  // Normalize pathname to strip trailing slashes for robust matching
+  const cleanPath = location.pathname.toLowerCase().replace(/\/$/, '');
+  const isAuthPage = cleanPath === '/login' || cleanPath === '/unauthorized';
+
+  if (!token || !user || isAuthPage) {
     return <>{children}</>;
   }
 
   return (
     <div className="portal-layout">
-      <RoleBasedSidebar />
-      <div style={{ flexGrow: 1, minWidth: 0 }}>
-        {children}
+      {/* Mobile Sidebar backdrop */}
+      {sidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      <RoleBasedSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
+      <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0 }}>
+        {/* Mobile Header Bar */}
+        <div className="mobile-top-bar">
+          <button 
+            className="menu-toggle-btn" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle Navigation Menu"
+          >
+            <Menu size={22} />
+          </button>
+          
+          <div className="mobile-logo">
+            <span>Academic Portal</span>
+          </div>
+          
+          <button 
+            className="theme-toggle-btn" 
+            onClick={toggleTheme}
+            aria-label="Switch Design Theme"
+          >
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+        </div>
+        
+        <div style={{ flexGrow: 1, minWidth: 0 }}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -104,7 +144,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppContent />
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

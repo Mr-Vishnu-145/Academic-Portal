@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Profile from '../pages/Profile';
+import ExamScheduleManager from '../pages/ExamScheduleManager';
 import { 
   CheckCircle, XCircle, AlertCircle, FileText, Download, Play, 
   CreditCard, BookOpen, Clock, Calendar, CheckSquare, Award
@@ -9,13 +11,85 @@ import {
 // Central Student Layout Shell
 const StudentLayout = ({ children }) => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  const getHeaderInfo = (pathname) => {
+    const path = pathname.toLowerCase().replace(/\/$/, '');
+    if (path.endsWith('/dashboard')) {
+      return {
+        title: 'Dashboard',
+        subtitle: `Welcome back, ${user?.name}! Here is your academic overview.`
+      };
+    }
+    if (path.endsWith('/profile')) {
+      return {
+        title: 'My Profile',
+        subtitle: 'View and manage your student profile details.'
+      };
+    }
+    if (path.endsWith('/fees')) {
+      return {
+        title: 'Fees & Invoices',
+        subtitle: 'Track your term fee schedule, pending payments, and payment history.'
+      };
+    }
+    if (path.endsWith('/marks')) {
+      return {
+        title: 'Marks & CGPA',
+        subtitle: 'Track your internal test marks and overall CGPA progress.'
+      };
+    }
+    if (path.endsWith('/results')) {
+      return {
+        title: 'Published Results',
+        subtitle: 'View your published semester end exam grades.'
+      };
+    }
+    if (path.endsWith('/attendance')) {
+      return {
+        title: 'Attendance Tracker',
+        subtitle: 'Monitor your daily and subject-wise class attendance.'
+      };
+    }
+    if (path.endsWith('/assignments')) {
+      return {
+        title: 'Assignments',
+        subtitle: 'Review and upload files for your course assignments.'
+      };
+    }
+    if (path.endsWith('/exams')) {
+      return {
+        title: 'Exam Schedule',
+        subtitle: 'View exam schedules, locations, and halls.'
+      };
+    }
+    if (path.endsWith('/documents')) {
+      return {
+        title: 'Academic Records',
+        subtitle: 'Access your transcripts, certificates, and academic documents.'
+      };
+    }
+    if (path.endsWith('/notifications')) {
+      return {
+        title: 'Notifications',
+        subtitle: 'Stay updated with portal announcements.'
+      };
+    }
+    return {
+      title: 'Academic Portal',
+      subtitle: `Welcome back, ${user?.name}`
+    };
+  };
+
+  const headerInfo = getHeaderInfo(location.pathname);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <div className="portal-content">
         <div className="content-header">
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '800' }}>Academic Portal</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name} ({user?.registerNumber})</p>
+          <div className="page-title-group">
+            <h1 className="page-title">{headerInfo.title}</h1>
+            <p className="page-subtitle">{headerInfo.subtitle}</p>
           </div>
           <div className="user-profile-summary">
             <div style={{ textAlign: 'right' }}>
@@ -39,12 +113,18 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     authenticatedFetch('/api/student/dashboard')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch student stats');
+        return res.json();
+      })
       .then(data => {
         setStats(data);
         setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) return <div>Loading dashboard...</div>;
@@ -854,12 +934,13 @@ const StudentRoutes = () => {
     <StudentLayout>
       <Routes>
         <Route path="dashboard" element={<StudentDashboard />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="fees" element={<FeesPage />} />
         <Route path="marks" element={<MarksPage />} />
         <Route path="results" element={<ResultPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="assignments" element={<AssignmentPage />} />
-        <Route path="exams" element={<ExamSchedulePage />} />
+        <Route path="exams" element={<ExamScheduleManager />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
       </Routes>
