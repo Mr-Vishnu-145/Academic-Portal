@@ -7,6 +7,7 @@ import {
   CheckCircle, XCircle, AlertCircle, FileText, Download, Play, 
   CreditCard, BookOpen, Clock, Calendar, CheckSquare, Award
 } from 'lucide-react';
+import CustomSelect from '../components/common/CustomSelect';
 
 // Central Student Layout Shell
 const StudentLayout = ({ children }) => {
@@ -339,11 +340,15 @@ const FeesPage = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">Payment Mode</label>
-                <select className="form-control" value={payMode} onChange={(e) => setPayMode(e.target.value)}>
-                  <option value="ONLINE">ONLINE / UPI</option>
-                  <option value="CASH">CASH</option>
-                  <option value="DD">Demand Draft</option>
-                </select>
+                <CustomSelect
+                  value={payMode}
+                  onChange={(e) => setPayMode(e.target.value)}
+                  options={[
+                    { value: 'ONLINE', label: 'ONLINE / UPI' },
+                    { value: 'CASH', label: 'CASH' },
+                    { value: 'DD', label: 'Demand Draft' }
+                  ]}
+                />
               </div>
               <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label className="form-label">Transaction Reference (Optional)</label>

@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Users, Building, CreditCard, ShieldCheck, Settings, PlusCircle, Trash, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
+import CustomSelect from '../components/common/CustomSelect';
 
 const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
 
@@ -412,20 +413,26 @@ const ManageAllUsersPage = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">Role</label>
-                <select className="form-control" value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option value="STUDENT">Student</option>
-                  <option value="STAFF">Staff</option>
-                  <option value="HOD">Head of Department (HOD)</option>
-                  <option value="ADMIN">Administrator</option>
-                </select>
+                <CustomSelect
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  options={[
+                    { value: 'STUDENT', label: 'Student' },
+                    { value: 'STAFF', label: 'Staff' },
+                    { value: 'HOD', label: 'Head of Department (HOD)' },
+                    { value: 'ADMIN', label: 'Administrator' }
+                  ]}
+                />
               </div>
 
               {role !== 'ADMIN' && (
                 <div className="form-group">
                   <label className="form-label">Department</label>
-                  <select className="form-control" value={deptId} onChange={(e) => setDeptId(e.target.value)}>
-                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={deptId}
+                    onChange={(e) => setDeptId(e.target.value)}
+                    options={departments.map(d => ({ value: d.id, label: d.name }))}
+                  />
                 </div>
               )}
 
@@ -433,12 +440,16 @@ const ManageAllUsersPage = () => {
                 <>
                   <div className="form-group">
                     <label className="form-label">Study Year</label>
-                    <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                      <option value="3">Year 3</option>
-                      <option value="4">Year 4</option>
-                    </select>
+                    <CustomSelect
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      options={[
+                        { value: '1', label: 'Year 1' },
+                        { value: '2', label: 'Year 2' },
+                        { value: '3', label: 'Year 3' },
+                        { value: '4', label: 'Year 4' }
+                      ]}
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Register Number</label>
@@ -591,18 +602,24 @@ const FeeManagementPage = () => {
         <form onSubmit={handleCreate} style={{ marginTop: '20px' }}>
           <div className="form-group">
             <label className="form-label">Department</label>
-            <select className="form-control" value={deptId} onChange={(e) => setDeptId(e.target.value)}>
-              {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            <CustomSelect
+              value={deptId}
+              onChange={(e) => setDeptId(e.target.value)}
+              options={depts.map(d => ({ value: d.id, label: d.name }))}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Student Year</label>
-            <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
-              <option value="1">Year 1</option>
-              <option value="2">Year 2</option>
-              <option value="3">Year 3</option>
-              <option value="4">Year 4</option>
-            </select>
+            <CustomSelect
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              options={[
+                { value: '1', label: 'Year 1' },
+                { value: '2', label: 'Year 2' },
+                { value: '3', label: 'Year 3' },
+                { value: '4', label: 'Year 4' }
+              ]}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Fee Type</label>
@@ -680,18 +697,24 @@ const PublishResultsPage = () => {
       <form onSubmit={handlePublish} style={{ marginTop: '24px' }}>
         <div className="form-group">
           <label className="form-label">Department</label>
-          <select className="form-control" value={deptId} onChange={(e) => setDeptId(e.target.value)}>
-            {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
+          <CustomSelect
+            value={deptId}
+            onChange={(e) => setDeptId(e.target.value)}
+            options={depts.map(d => ({ value: d.id, label: d.name }))}
+          />
         </div>
         <div className="form-group" style={{ marginBottom: '24px' }}>
           <label className="form-label">Semester</label>
-          <select className="form-control" value={semester} onChange={(e) => setSemester(e.target.value)}>
-            <option value="1">Semester 1</option>
-            <option value="2">Semester 2</option>
-            <option value="3">Semester 3</option>
-            <option value="4">Semester 4</option>
-          </select>
+          <CustomSelect
+            value={semester}
+            onChange={(e) => setSemester(e.target.value)}
+            options={[
+              { value: '1', label: 'Semester 1' },
+              { value: '2', label: 'Semester 2' },
+              { value: '3', label: 'Semester 3' },
+              { value: '4', label: 'Semester 4' }
+            ]}
+          />
         </div>
         <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={publishing}>
           {publishing ? 'Publishing...' : 'Release Results'}

@@ -4,6 +4,7 @@ import {
   Calendar, PlusCircle, Trash2, Edit, XCircle, AlertCircle, CheckCircle, 
   User, BookOpen, Layers, MapPin, Clock, Tag, RefreshCw, BarChart2, PieChart, ShieldAlert
 } from 'lucide-react';
+import CustomSelect from '../components/common/CustomSelect';
 
 const getCurrentTimeString = () => {
   const now = new Date();
@@ -350,43 +351,59 @@ const ExamScheduleManager = () => {
                 {user.role === 'ADMIN' && (
                   <div style={{ flexGrow: 1, minWidth: '150px' }}>
                     <label className="form-label" style={{ fontSize: '12px' }}>Department</label>
-                    <select className="form-control" style={{ padding: '8px 12px' }} value={adminDeptFilter} onChange={(e) => setAdminDeptFilter(e.target.value)}>
-                      <option value="ALL">All Departments</option>
-                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
+                    <CustomSelect 
+                      value={adminDeptFilter} 
+                      onChange={(e) => setAdminDeptFilter(e.target.value)}
+                      options={[
+                        { value: 'ALL', label: 'All Departments' },
+                        ...departments.map(d => ({ value: d.id.toString(), label: d.name }))
+                      ]}
+                    />
                   </div>
                 )}
 
                 <div style={{ flexGrow: 1, minWidth: '120px' }}>
                   <label className="form-label" style={{ fontSize: '12px' }}>Study Year</label>
-                  <select className="form-control" style={{ padding: '8px 12px' }} value={filterYear} onChange={(e) => setFilterYear(e.target.value)}>
-                    <option value="ALL">All Years</option>
-                    <option value="1">Year 1</option>
-                    <option value="2">Year 2</option>
-                    <option value="3">Year 3</option>
-                    <option value="4">Year 4</option>
-                  </select>
+                  <CustomSelect 
+                    value={filterYear} 
+                    onChange={(e) => setFilterYear(e.target.value)}
+                    options={[
+                      { value: 'ALL', label: 'All Years' },
+                      { value: '1', label: 'Year 1' },
+                      { value: '2', label: 'Year 2' },
+                      { value: '3', label: 'Year 3' },
+                      { value: '4', label: 'Year 4' }
+                    ]}
+                  />
                 </div>
 
                 <div style={{ flexGrow: 1, minWidth: '120px' }}>
                   <label className="form-label" style={{ fontSize: '12px' }}>Section</label>
-                  <select className="form-control" style={{ padding: '8px 12px' }} value={filterSection} onChange={(e) => setFilterSection(e.target.value)}>
-                    <option value="ALL">All Sections</option>
-                    <option value="A">Section A</option>
-                    <option value="B">Section B</option>
-                    <option value="C">Section C</option>
-                  </select>
+                  <CustomSelect 
+                    value={filterSection} 
+                    onChange={(e) => setFilterSection(e.target.value)}
+                    options={[
+                      { value: 'ALL', label: 'All Sections' },
+                      { value: 'A', label: 'Section A' },
+                      { value: 'B', label: 'Section B' },
+                      { value: 'C', label: 'Section C' }
+                    ]}
+                  />
                 </div>
 
                 <div style={{ flexGrow: 1, minWidth: '120px' }}>
                   <label className="form-label" style={{ fontSize: '12px' }}>Scope Type</label>
-                  <select className="form-control" style={{ padding: '8px 12px' }} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-                    <option value="ALL">All Scopes</option>
-                    <option value="INDIVIDUAL">Individual</option>
-                    <option value="SECTION">Section-wise</option>
-                    <option value="YEAR">Year-wise</option>
-                    <option value="DEPARTMENT">Department-wide</option>
-                  </select>
+                  <CustomSelect 
+                    value={filterType} 
+                    onChange={(e) => setFilterType(e.target.value)}
+                    options={[
+                      { value: 'ALL', label: 'All Scopes' },
+                      { value: 'INDIVIDUAL', label: 'Individual' },
+                      { value: 'SECTION', label: 'Section-wise' },
+                      { value: 'YEAR', label: 'Year-wise' },
+                      { value: 'DEPARTMENT', label: 'Department-wide' }
+                    ]}
+                  />
                 </div>
 
               </div>
@@ -525,30 +542,24 @@ const ExamScheduleManager = () => {
                 {user.role === 'ADMIN' && (
                   <div className="form-group">
                     <label className="form-label">Department</label>
-                    <select 
-                      className="form-control" 
+                    <CustomSelect 
                       value={targetDeptId} 
                       onChange={(e) => setTargetDeptId(e.target.value)}
-                    >
-                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
+                      options={departments.map(d => ({ value: d.id.toString(), label: d.name }))}
+                    />
                   </div>
                 )}
 
                 <div className="form-group">
                   <label className="form-label">Subject</label>
-                  <select 
-                    className="form-control" 
+                  <CustomSelect 
                     value={selectedSub} 
                     onChange={(e) => setSelectedSub(e.target.value)}
-                    required
-                  >
-                    {subjects.map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.code}) - Sem {s.semester}
-                      </option>
-                    ))}
-                  </select>
+                    options={subjects.map(s => ({
+                      value: s.id.toString(),
+                      label: `${s.name} (${s.code}) - Sem ${s.semester}`
+                    }))}
+                  />
                 </div>
 
                 <div style={{ display: 'flex', gap: '16px' }}>
@@ -592,32 +603,32 @@ const ExamScheduleManager = () => {
 
                 <div className="form-group">
                   <label className="form-label">Assignment Scope</label>
-                  <select 
-                    className="form-control" 
+                  <CustomSelect 
                     value={assignmentType} 
                     onChange={(e) => setAssignmentType(e.target.value)}
-                  >
-                    <option value="DEPARTMENT">Department-wide (All Students)</option>
-                    <option value="YEAR">Year-wise (All sections of study year)</option>
-                    <option value="SECTION">Section-wise (Specific section of study year)</option>
-                    <option value="INDIVIDUAL">Individual Student</option>
-                  </select>
+                    options={[
+                      { value: 'DEPARTMENT', label: 'Department-wide (All Students)' },
+                      { value: 'YEAR', label: 'Year-wise (All sections of study year)' },
+                      { value: 'SECTION', label: 'Section-wise (Specific section of study year)' },
+                      { value: 'INDIVIDUAL', label: 'Individual Student' }
+                    ]}
+                  />
                 </div>
 
                 {/* Conditional scope inputs */}
                 {(assignmentType === 'YEAR' || assignmentType === 'SECTION') && (
                   <div className="form-group">
                     <label className="form-label">Study Year</label>
-                    <select 
-                      className="form-control" 
+                    <CustomSelect 
                       value={selectedYear} 
                       onChange={(e) => setSelectedYear(e.target.value)}
-                    >
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                      <option value="3">Year 3</option>
-                      <option value="4">Year 4</option>
-                    </select>
+                      options={[
+                        { value: '1', label: 'Year 1' },
+                        { value: '2', label: 'Year 2' },
+                        { value: '3', label: 'Year 3' },
+                        { value: '4', label: 'Year 4' }
+                      ]}
+                    />
                   </div>
                 )}
 
@@ -638,18 +649,14 @@ const ExamScheduleManager = () => {
                 {assignmentType === 'INDIVIDUAL' && (
                   <div className="form-group">
                     <label className="form-label">Select Student</label>
-                    <select 
-                      className="form-control" 
+                    <CustomSelect 
                       value={selectedStudent} 
                       onChange={(e) => setSelectedStudent(e.target.value)}
-                      required
-                    >
-                      {students.map(s => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.registerNumber}) - Yr {s.year}{s.section ? ` Sec ${s.section}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      options={students.map(s => ({
+                        value: s.id.toString(),
+                        label: `${s.name} (${s.registerNumber}) - Yr ${s.year}${s.section ? ` Sec ${s.section}` : ''}`
+                      }))}
+                    />
                   </div>
                 )}
 
@@ -755,15 +762,15 @@ const ExamScheduleManager = () => {
 
               <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label className="form-label">Status</label>
-                <select 
-                  className="form-control" 
-                  value={editStatus} 
+                <CustomSelect
+                  value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value)}
-                >
-                  <option value="UPCOMING">Upcoming</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </select>
+                  options={[
+                    { value: 'UPCOMING', label: 'Upcoming' },
+                    { value: 'COMPLETED', label: 'Completed' },
+                    { value: 'CANCELLED', label: 'Cancelled' }
+                  ]}
+                />
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>

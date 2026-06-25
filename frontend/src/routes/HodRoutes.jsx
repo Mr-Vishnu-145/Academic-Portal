@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
 import { Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, Save, Eye, EyeOff } from 'lucide-react';
+import CustomSelect from '../components/common/CustomSelect';
 
 const HodLayout = ({ children }) => {
   const { user } = useAuth();
@@ -257,22 +258,30 @@ const ManageStaffPage = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">Role</label>
-                <select className="form-control" value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option value="STAFF">Staff</option>
-                  <option value="STUDENT">Student</option>
-                </select>
+                <CustomSelect
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  options={[
+                    { value: 'STAFF', label: 'Staff' },
+                    { value: 'STUDENT', label: 'Student' }
+                  ]}
+                />
               </div>
 
               {role === 'STUDENT' ? (
                 <>
                   <div className="form-group">
                     <label className="form-label">Study Year</label>
-                    <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                      <option value="3">Year 3</option>
-                      <option value="4">Year 4</option>
-                    </select>
+                    <CustomSelect
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      options={[
+                        { value: '1', label: 'Year 1' },
+                        { value: '2', label: 'Year 2' },
+                        { value: '3', label: 'Year 3' },
+                        { value: '4', label: 'Year 4' }
+                      ]}
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Register Number</label>
@@ -282,12 +291,16 @@ const ManageStaffPage = () => {
               ) : (
                 <div className="form-group">
                   <label className="form-label">Assigned Year</label>
-                  <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
-                    <option value="1">Year 1</option>
-                    <option value="2">Year 2</option>
-                    <option value="3">Year 3</option>
-                    <option value="4">Year 4</option>
-                  </select>
+                  <CustomSelect
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    options={[
+                      { value: '1', label: 'Year 1' },
+                      { value: '2', label: 'Year 2' },
+                      { value: '3', label: 'Year 3' },
+                      { value: '4', label: 'Year 4' }
+                    ]}
+                  />
                 </div>
               )}
 
@@ -468,22 +481,30 @@ const DeptStudentsPage = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">Role</label>
-                <select className="form-control" value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option value="STUDENT">Student</option>
-                  <option value="STAFF">Staff</option>
-                </select>
+                <CustomSelect
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  options={[
+                    { value: 'STUDENT', label: 'Student' },
+                    { value: 'STAFF', label: 'Staff' }
+                  ]}
+                />
               </div>
 
               {role === 'STUDENT' ? (
                 <>
                   <div className="form-group">
                     <label className="form-label">Study Year</label>
-                    <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                      <option value="3">Year 3</option>
-                      <option value="4">Year 4</option>
-                    </select>
+                    <CustomSelect
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      options={[
+                        { value: '1', label: 'Year 1' },
+                        { value: '2', label: 'Year 2' },
+                        { value: '3', label: 'Year 3' },
+                        { value: '4', label: 'Year 4' }
+                      ]}
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Register Number</label>
@@ -493,12 +514,16 @@ const DeptStudentsPage = () => {
               ) : (
                 <div className="form-group">
                   <label className="form-label">Assigned Year</label>
-                  <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
-                    <option value="1">Year 1</option>
-                    <option value="2">Year 2</option>
-                    <option value="3">Year 3</option>
-                    <option value="4">Year 4</option>
-                  </select>
+                  <CustomSelect
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    options={[
+                      { value: '1', label: 'Year 1' },
+                      { value: '2', label: 'Year 2' },
+                      { value: '3', label: 'Year 3' },
+                      { value: '4', label: 'Year 4' }
+                    ]}
+                  />
                 </div>
               )}
 
@@ -594,16 +619,20 @@ const PublishResultsPage = () => {
       <form onSubmit={handlePublish}>
         <div className="form-group" style={{ marginBottom: '24px' }}>
           <label className="form-label">Semester</label>
-          <select className="form-control" value={semester} onChange={(e) => setSemester(e.target.value)}>
-            <option value="1">Semester 1</option>
-            <option value="2">Semester 2</option>
-            <option value="3">Semester 3</option>
-            <option value="4">Semester 4</option>
-            <option value="5">Semester 5</option>
-            <option value="6">Semester 6</option>
-            <option value="7">Semester 7</option>
-            <option value="8">Semester 8</option>
-          </select>
+          <CustomSelect
+            value={semester}
+            onChange={(e) => setSemester(e.target.value)}
+            options={[
+              { value: '1', label: 'Semester 1' },
+              { value: '2', label: 'Semester 2' },
+              { value: '3', label: 'Semester 3' },
+              { value: '4', label: 'Semester 4' },
+              { value: '5', label: 'Semester 5' },
+              { value: '6', label: 'Semester 6' },
+              { value: '7', label: 'Semester 7' },
+              { value: '8', label: 'Semester 8' }
+            ]}
+          />
         </div>
         <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={publishing}>
           {publishing ? 'Publishing...' : 'Publish Grades & Calculate GPA'}

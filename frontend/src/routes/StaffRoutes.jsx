@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
 import { Users, CheckSquare, Award, BookOpen, Calendar, HelpCircle, Save, PlusCircle, Eye, EyeOff } from 'lucide-react';
-
+import CustomSelect from '../components/common/CustomSelect';
 const getCurrentTimeString = () => {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
@@ -280,12 +280,16 @@ const MyStudentsPage = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">Study Year</label>
-                <select className="form-control" value={year} onChange={(e) => setYear(e.target.value)}>
-                  <option value="1">Year 1</option>
-                  <option value="2">Year 2</option>
-                  <option value="3">Year 3</option>
-                  <option value="4">Year 4</option>
-                </select>
+                <CustomSelect 
+                  value={year} 
+                  onChange={(e) => setYear(e.target.value)}
+                  options={[
+                    { value: '1', label: 'Year 1' },
+                    { value: '2', label: 'Year 2' },
+                    { value: '3', label: 'Year 3' },
+                    { value: '4', label: 'Year 4' }
+                  ]}
+                />
               </div>
               <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label className="form-label">Default Password</label>
@@ -400,9 +404,11 @@ const MarkAttendancePage = () => {
       <div style={{ display: 'flex', gap: '20px', margin: '24px 0', flexWrap: 'wrap' }}>
         <div className="form-group" style={{ flexGrow: 1, minWidth: '200px' }}>
           <label className="form-label">Subject</label>
-          <select className="form-control" value={selectedSub} onChange={(e) => setSelectedSub(e.target.value)}>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          <CustomSelect 
+            value={selectedSub} 
+            onChange={(e) => setSelectedSub(e.target.value)}
+            options={subjects.map(s => ({ value: s.id.toString(), label: s.name }))}
+          />
         </div>
         <div className="form-group" style={{ width: '200px' }}>
           <label className="form-label">Class Date</label>
@@ -515,24 +521,32 @@ const UploadMarksPage = () => {
       <form onSubmit={handleSave} style={{ marginTop: '24px' }}>
         <div className="form-group">
           <label className="form-label">Student</label>
-          <select className="form-control" value={selectedStudent} onChange={(e) => setSelectedStudent(e.target.value)}>
-            {students.map(s => <option key={s.id} value={s.id}>{s.name} ({s.registerNumber})</option>)}
-          </select>
+          <CustomSelect 
+            value={selectedStudent} 
+            onChange={(e) => setSelectedStudent(e.target.value)}
+            options={students.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.registerNumber})` }))}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">Subject</label>
-          <select className="form-control" value={selectedSub} onChange={(e) => setSelectedSub(e.target.value)}>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-          </select>
+          <CustomSelect 
+            value={selectedSub} 
+            onChange={(e) => setSelectedSub(e.target.value)}
+            options={subjects.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.code})` }))}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">Assessment Type</label>
-          <select className="form-control" value={examType} onChange={(e) => setExamType(e.target.value)}>
-            <option value="CAT1">CAT 1</option>
-            <option value="CAT2">CAT 2</option>
-            <option value="MODEL">MODEL Exam</option>
-            <option value="ASSIGNMENT">Assignment</option>
-          </select>
+          <CustomSelect 
+            value={examType} 
+            onChange={(e) => setExamType(e.target.value)}
+            options={[
+              { value: 'CAT1', label: 'CAT 1' },
+              { value: 'CAT2', label: 'CAT 2' },
+              { value: 'MODEL', label: 'MODEL Exam' },
+              { value: 'ASSIGNMENT', label: 'Assignment' }
+            ]}
+          />
         </div>
         <div style={{ display: 'flex', gap: '16px' }}>
           <div className="form-group" style={{ flexGrow: 1 }}>
@@ -609,9 +623,11 @@ const ManageAssignmentsPage = () => {
       <form onSubmit={handleCreate} style={{ marginTop: '24px' }}>
         <div className="form-group">
           <label className="form-label">Subject</label>
-          <select className="form-control" value={selectedSub} onChange={(e) => setSelectedSub(e.target.value)}>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-          </select>
+          <CustomSelect 
+            value={selectedSub} 
+            onChange={(e) => setSelectedSub(e.target.value)}
+            options={subjects.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.code})` }))}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">Assignment Title</label>
@@ -703,19 +719,25 @@ const SetExamSchedulePage = () => {
       <form onSubmit={handleSave} style={{ marginTop: '24px' }}>
         <div className="form-group">
           <label className="form-label">Subject</label>
-          <select className="form-control" value={selectedSub} onChange={(e) => setSelectedSub(e.target.value)}>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-          </select>
+          <CustomSelect 
+            value={selectedSub} 
+            onChange={(e) => setSelectedSub(e.target.value)}
+            options={subjects.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.code})` }))}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">Exam Type</label>
-          <select className="form-control" value={examType} onChange={(e) => setExamType(e.target.value)}>
-            <option value="CAT1">CAT 1</option>
-            <option value="CAT2">CAT 2</option>
-            <option value="MODEL">MODEL Exam</option>
-            <option value="SEMESTER">SEMESTER Final</option>
-            <option value="ARREAR">ARREAR Backlog</option>
-          </select>
+          <CustomSelect 
+            value={examType} 
+            onChange={(e) => setExamType(e.target.value)}
+            options={[
+              { value: 'CAT1', label: 'CAT 1' },
+              { value: 'CAT2', label: 'CAT 2' },
+              { value: 'MODEL', label: 'MODEL Exam' },
+              { value: 'SEMESTER', label: 'SEMESTER Final' },
+              { value: 'ARREAR', label: 'ARREAR Backlog' }
+            ]}
+          />
         </div>
         <div style={{ display: 'flex', gap: '16px' }}>
           <div className="form-group" style={{ flexGrow: 1 }}>
