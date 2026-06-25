@@ -637,7 +637,13 @@ const FeeManagementPage = () => {
               value={dueDate} 
               min={getTodayDateString()} 
               onChange={(e) => setDueDate(e.target.value)} 
-              onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+              onClick={(e) => { 
+                try { e.target.showPicker(); } catch (err) {} 
+                const today = getTodayDateString();
+                if (dueDate < today) {
+                  setDueDate(today);
+                }
+              }}
               required 
             />
           </div>

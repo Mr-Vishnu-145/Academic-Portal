@@ -13,16 +13,20 @@ com\academicportal\entity\AssessmentRecord.class
 com\academicportal\service\FeeService.class
 com\academicportal\controller\student\StudentDashboardController.class
 com\academicportal\controller\student\StudentAttendanceController.class
+com\academicportal\controller\ProfileController.class
 com\academicportal\service\AccessScopeService$AccessDeniedException.class
+com\academicportal\entity\RoleConverter.class
 com\academicportal\repository\AssessmentRecordRepository.class
 com\academicportal\entity\AssessmentRecordStatus.class
 com\academicportal\entity\AttendanceStatus.class
+com\academicportal\repository\ExamScheduleRepository.class
 com\academicportal\entity\Notification.class
 com\academicportal\controller\student\StudentFeeController.class
 com\academicportal\config\SchedulerConfig.class
 com\academicportal\controller\student\StudentMarksController.class
 com\academicportal\entity\ArrearStatus.class
 com\academicportal\controller\hod\HodDashboardController.class
+com\academicportal\controller\ExamScheduleController$ExamScheduleRequest.class
 com\academicportal\controller\hod\HodStudentController.class
 com\academicportal\repository\DepartmentRepository.class
 com\academicportal\security\JwtUtil.class
@@ -30,6 +34,7 @@ com\academicportal\repository\SemesterResultRepository.class
 com\academicportal\security\RoleDeptYearGuard.class
 com\academicportal\controller\student\StudentDocumentController.class
 com\academicportal\entity\Attendance.class
+com\academicportal\entity\RoleConverter$1.class
 com\academicportal\service\AttendanceService.class
 com\academicportal\controller\staff\StaffDashboardController.class
 com\academicportal\service\ExamScheduleService.class
@@ -41,6 +46,7 @@ com\academicportal\entity\Department.class
 com\academicportal\service\ResultPublishService.class
 com\academicportal\service\ArrearService.class
 com\academicportal\repository\CgpaSummaryRepository.class
+com\academicportal\controller\ExamScheduleController.class
 com\academicportal\controller\staff\StaffStudentController.class
 com\academicportal\entity\SemesterResult.class
 com\academicportal\AcademicPortalApplication.class
@@ -51,6 +57,7 @@ com\academicportal\entity\StaffAssignment.class
 com\academicportal\controller\staff\StaffAttendanceController.class
 com\academicportal\entity\CgpaSummary.class
 com\academicportal\entity\Document.class
+com\academicportal\entity\ExamSchedule.class
 com\academicportal\controller\admin\AdminDepartmentController.class
 com\academicportal\controller\student\StudentExamController.class
 com\academicportal\security\JwtAuthFilter.class

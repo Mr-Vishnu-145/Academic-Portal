@@ -7,8 +7,10 @@ V:\academic-portal\backend\src\main\java\com\academicportal\controller\staff\Sta
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\student\StudentAttendanceController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\AcademicPortalApplication.java
 V:\academic-portal\backend\src\main\java\com\academicportal\repository\FeeStructureRepository.java
+V:\academic-portal\backend\src\main\java\com\academicportal\repository\ExamScheduleRepository.java
 V:\academic-portal\backend\src\main\java\com\academicportal\config\SchedulerConfig.java
 V:\academic-portal\backend\src\main\java\com\academicportal\service\ArrearService.java
+V:\academic-portal\backend\src\main\java\com\academicportal\entity\ExamSchedule.java
 V:\academic-portal\backend\src\main\java\com\academicportal\service\NotificationService.java
 V:\academic-portal\backend\src\main\java\com\academicportal\config\SecurityConfig.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\hod\HodStaffController.java
@@ -32,6 +34,7 @@ V:\academic-portal\backend\src\main\java\com\academicportal\controller\staff\Sta
 V:\academic-portal\backend\src\main\java\com\academicportal\repository\UserRepository.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\admin\AdminResultController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\student\StudentAssignmentController.java
+V:\academic-portal\backend\src\main\java\com\academicportal\entity\RoleConverter.java
 V:\academic-portal\backend\src\main\java\com\academicportal\repository\DocumentRepository.java
 V:\academic-portal\backend\src\main\java\com\academicportal\service\AttendanceService.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\admin\AdminDepartmentController.java
@@ -51,6 +54,7 @@ V:\academic-portal\backend\src\main\java\com\academicportal\entity\DocType.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\NotificationController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\admin\AdminFeeController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\security\RoleDeptYearGuard.java
+V:\academic-portal\backend\src\main\java\com\academicportal\controller\ProfileController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\entity\AssessmentRecord.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\student\StudentResultController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\admin\AdminUserController.java
@@ -75,6 +79,7 @@ V:\academic-portal\backend\src\main\java\com\academicportal\repository\CgpaSumma
 V:\academic-portal\backend\src\main\java\com\academicportal\entity\NotificationType.java
 V:\academic-portal\backend\src\main\java\com\academicportal\repository\StaffAssignmentRepository.java
 V:\academic-portal\backend\src\main\java\com\academicportal\service\PdfReceiptService.java
+V:\academic-portal\backend\src\main\java\com\academicportal\controller\ExamScheduleController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\controller\staff\StaffExamController.java
 V:\academic-portal\backend\src\main\java\com\academicportal\service\AssignmentService.java
 V:\academic-portal\backend\src\main\java\com\academicportal\entity\CgpaSummary.java

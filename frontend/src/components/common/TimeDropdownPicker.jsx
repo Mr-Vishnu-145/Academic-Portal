@@ -1,19 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import CustomSelect from './CustomSelect';
 
-const TimeDropdownPicker = ({ value, onChange, disabled = false }) => {
-  // Parse value (HH:MM) into 12-hour parts
+const TimeDropdownPicker = ({ value, onChange, disabled = false, isEdit = false }) => {
+  const [isManuallySet, setIsManuallySet] = useState(false);
+
+  // Reset manual interaction tracker if parent resets value
+  useEffect(() => {
+    if (!value || value === '') {
+      setIsManuallySet(false);
+    }
+  }, [value]);
+
+  // Parse value (HH:MM or HH:MM:SS or HH:MM AM/PM) into 12-hour parts
   const parseTime = (timeStr) => {
     if (!timeStr) return { hour: '12', minute: '00', period: 'AM' };
-    const parts = timeStr.split(':');
-    if (parts.length < 2) return { hour: '12', minute: '00', period: 'AM' };
+    
+    const normalized = timeStr.trim().toUpperCase();
+    
+    // Determine AM/PM period
+    let p = 'AM';
+    if (normalized.includes('PM')) {
+      p = 'PM';
+    } else if (normalized.includes('AM')) {
+      p = 'AM';
+    } else {
+      // 24-hour format: determine period from hours digits
+      const hoursPart = parseInt(normalized.split(':')[0], 10);
+      if (!isNaN(hoursPart)) {
+        p = hoursPart >= 12 ? 'PM' : 'AM';
+      }
+    }
+    
+    // Clean text indicators to get numeric parts
+    const cleanTime = normalized.replace(/[A-Z]/g, '').trim();
+    const parts = cleanTime.split(':');
+    if (parts.length < 2) return { hour: '12', minute: '00', period: p };
     
     let h = parseInt(parts[0], 10);
     const m = parts[1].substring(0, 2);
-    const p = h >= 12 ? 'PM' : 'AM';
     
+    if (isNaN(h)) h = 12;
+    
+    // Normalize to 12-hour format display digits
     h = h % 12;
-    h = h ? h : 12; // 0 becomes 12
+    h = h ? h : 12;
     const hStr = h < 10 ? '0' + h : h.toString();
     
     return { hour: hStr, minute: m, period: p };
@@ -21,7 +51,7 @@ const TimeDropdownPicker = ({ value, onChange, disabled = false }) => {
 
   const { hour, minute, period } = parseTime(value);
 
-  // Generate options
+  // Generate selection lists
   const hourOptions = Array.from({ length: 12 }, (_, i) => {
     const val = (i + 1) < 10 ? '0' + (i + 1) : (i + 1).toString();
     return { value: val, label: val };
@@ -37,7 +67,22 @@ const TimeDropdownPicker = ({ value, onChange, disabled = false }) => {
     { value: 'PM', label: 'PM' }
   ];
 
+  // Automatically load the latest system/device time on picker open/first interaction
+  const handleInteraction = () => {
+    if (!disabled && !isEdit && !isManuallySet) {
+      setIsManuallySet(true);
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const formatted = `${h}:${m}`;
+      onChange({ target: { value: formatted } });
+    }
+  };
+
   const handlePartChange = (changedPart, newVal) => {
+    // Lock interaction tracker
+    setIsManuallySet(true);
+
     let currentHour = hour;
     let currentMinute = minute;
     let currentPeriod = period;
@@ -46,7 +91,7 @@ const TimeDropdownPicker = ({ value, onChange, disabled = false }) => {
     else if (changedPart === 'minute') currentMinute = newVal;
     else if (changedPart === 'period') currentPeriod = newVal;
 
-    // Convert back to 24-hour HH:MM
+    // Convert back to 24-hour HH:MM format for parent state storage
     let h = parseInt(currentHour, 10);
     if (currentPeriod === 'PM' && h < 12) h += 12;
     if (currentPeriod === 'AM' && h === 12) h = 0;
@@ -58,7 +103,10 @@ const TimeDropdownPicker = ({ value, onChange, disabled = false }) => {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+    <div 
+      style={{ display: 'flex', gap: '8px', width: '100%' }}
+      onMouseDown={handleInteraction}
+    >
       <div style={{ flex: 1 }}>
         <CustomSelect
           value={hour}

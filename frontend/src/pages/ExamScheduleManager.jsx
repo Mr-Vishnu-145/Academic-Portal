@@ -588,7 +588,13 @@ const ExamScheduleManager = () => {
                       value={examDate} 
                       min={getTodayDateString()}
                       onChange={(e) => setExamDate(e.target.value)} 
-                      onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                      onClick={(e) => { 
+                        try { e.target.showPicker(); } catch (err) {} 
+                        const today = getTodayDateString();
+                        if (examDate < today) {
+                          setExamDate(today);
+                        }
+                      }}
                       required 
                     />
                   </div>
@@ -743,7 +749,13 @@ const ExamScheduleManager = () => {
                   value={editDate} 
                   min={getTodayDateString()}
                   onChange={(e) => setEditDate(e.target.value)} 
-                  onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                  onClick={(e) => { 
+                    try { e.target.showPicker(); } catch (err) {} 
+                    const today = getTodayDateString();
+                    if (editDate < today) {
+                      setEditDate(today);
+                    }
+                  }}
                   required 
                 />
               </div>
@@ -753,6 +765,7 @@ const ExamScheduleManager = () => {
                 <TimeDropdownPicker 
                   value={editTime} 
                   onChange={(e) => setEditTime(e.target.value)} 
+                  isEdit={true}
                 />
               </div>
 
