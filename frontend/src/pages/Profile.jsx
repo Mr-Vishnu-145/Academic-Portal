@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Lock, Mail, Phone, Building, Calendar, Key, Shield } from 'lucide-react';
+import { User, Lock, Mail, Phone, Building, Calendar, Key, Shield, Eye, EyeOff } from 'lucide-react';
 
 const Profile = () => {
   const { authenticatedFetch } = useAuth();
@@ -13,6 +13,9 @@ const Profile = () => {
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     authenticatedFetch('/api/profile')
@@ -179,38 +182,110 @@ const Profile = () => {
           
           <div className="form-group">
             <label className="form-label">Current Password</label>
-            <input 
-              type="password" 
-              className="form-control" 
-              value={currentPassword} 
-              onChange={(e) => setCurrentPassword(e.target.value)} 
-              required 
-              placeholder="Enter current password" 
-            />
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showCurrent ? 'text' : 'password'} 
+                className="form-control" 
+                value={currentPassword} 
+                onChange={(e) => setCurrentPassword(e.target.value)} 
+                required 
+                placeholder="Enter current password" 
+                style={{ paddingRight: '48px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  outline: 'none'
+                }}
+                aria-label={showCurrent ? "Hide password" : "Show password"}
+              >
+                {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">New Password</label>
-            <input 
-              type="password" 
-              className="form-control" 
-              value={newPassword} 
-              onChange={(e) => setNewPassword(e.target.value)} 
-              required 
-              placeholder="Enter new password" 
-            />
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showNew ? 'text' : 'password'} 
+                className="form-control" 
+                value={newPassword} 
+                onChange={(e) => setNewPassword(e.target.value)} 
+                required 
+                placeholder="Enter new password" 
+                style={{ paddingRight: '48px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  outline: 'none'
+                }}
+                aria-label={showNew ? "Hide password" : "Show password"}
+              >
+                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div className="form-group" style={{ marginBottom: '24px' }}>
             <label className="form-label">Confirm New Password</label>
-            <input 
-              type="password" 
-              className="form-control" 
-              value={confirmPassword} 
-              onChange={(e) => setConfirmPassword(e.target.value)} 
-              required 
-              placeholder="Confirm new password" 
-            />
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showConfirm ? 'text' : 'password'} 
+                className="form-control" 
+                value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} 
+                required 
+                placeholder="Confirm new password" 
+                style={{ paddingRight: '48px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  outline: 'none'
+                }}
+                aria-label={showConfirm ? "Hide password" : "Show password"}
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={updating}>

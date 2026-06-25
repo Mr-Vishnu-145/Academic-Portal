@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
-import { Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, Save } from 'lucide-react';
+import { Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, Save, Eye, EyeOff } from 'lucide-react';
 
 const HodLayout = ({ children }) => {
   const { user } = useAuth();
@@ -146,6 +146,7 @@ const ManageStaffPage = () => {
   const [registerNumber, setRegisterNumber] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const fetchStaff = () => {
     authenticatedFetch('/api/hod/staff')
@@ -292,7 +293,37 @@ const ManageStaffPage = () => {
 
               <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label className="form-label">Default Password</label>
-                <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-control"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ paddingRight: '48px' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '16px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      outline: 'none'
+                    }}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
@@ -324,6 +355,7 @@ const DeptStudentsPage = () => {
   const [registerNumber, setRegisterNumber] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const fetchStudents = () => {
     authenticatedFetch('/api/hod/students')
@@ -472,7 +504,37 @@ const DeptStudentsPage = () => {
 
               <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label className="form-label">Default Password</label>
-                <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-control"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ paddingRight: '48px' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '16px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      outline: 'none'
+                    }}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
