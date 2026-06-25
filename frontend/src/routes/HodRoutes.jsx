@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
+import MarkImportPage from '../pages/MarkImportPage';
 import { Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, Save, Eye, EyeOff } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 
@@ -46,6 +47,12 @@ const HodLayout = ({ children }) => {
       return {
         title: 'Publish Results',
         subtitle: 'Review and release student semester exam results to calculate CGPA.'
+      };
+    }
+    if (path.endsWith('/import-marks')) {
+      return {
+        title: 'Mark Import & Auto Entry',
+        subtitle: 'Upload department mark sheets and automatically extract/manage student grades.'
       };
     }
     return {
@@ -651,6 +658,7 @@ const HodRoutes = () => {
         <Route path="staff" element={<ManageStaffPage />} />
         <Route path="students" element={<DeptStudentsPage />} />
         <Route path="exams" element={<ExamScheduleManager />} />
+        <Route path="import-marks" element={<MarkImportPage />} />
         <Route path="results" element={<PublishResultsPage />} />
       </Routes>
     </HodLayout>

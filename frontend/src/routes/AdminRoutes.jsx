@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Users, Building, CreditCard, ShieldCheck, Settings, PlusCircle, Trash, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
+import MarkImportPage from '../pages/MarkImportPage';
 import CustomSelect from '../components/common/CustomSelect';
 
 const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
@@ -47,6 +48,12 @@ const AdminLayout = ({ children }) => {
       return {
         title: 'Release Results',
         subtitle: 'Globally publish semester end exam grades and compute student CGPA.'
+      };
+    }
+    if (path.endsWith('/import-marks')) {
+      return {
+        title: 'Mark Import & Auto Entry',
+        subtitle: 'Upload institutional mark sheets and automatically extract/manage student grades.'
       };
     }
     if (path.endsWith('/settings')) {
@@ -761,6 +768,7 @@ const AdminRoutes = () => {
         <Route path="departments" element={<ManageDepartmentsPage />} />
         <Route path="users" element={<ManageAllUsersPage />} />
         <Route path="fees" element={<FeeManagementPage />} />
+        <Route path="import-marks" element={<MarkImportPage />} />
         <Route path="exams" element={<ExamScheduleManager />} />
         <Route path="results" element={<PublishResultsPage />} />
         <Route path="settings" element={<SystemSettingsPage />} />

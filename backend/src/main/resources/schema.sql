@@ -2,6 +2,7 @@
 
 -- Drop tables in reverse order of dependencies
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS mark_import_logs;
 DROP TABLE IF EXISTS fee_payments;
 DROP TABLE IF EXISTS fee_structure;
 DROP TABLE IF EXISTS documents;
@@ -249,3 +250,16 @@ CREATE INDEX idx_assessment_records_student ON assessment_records(student_id);
 CREATE INDEX idx_results_student_semester ON semester_results(student_id, semester);
 CREATE INDEX idx_cgpa_student_semester ON cgpa_summary(student_id, semester);
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read);
+
+CREATE TABLE mark_import_logs (
+  id              INT PRIMARY KEY AUTO_INCREMENT,
+  file_name       VARCHAR(255) NOT NULL,
+  uploaded_by     INT NOT NULL,
+  department_id   INT NULL,
+  upload_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  records_imported INT NOT NULL,
+  failed_records  INT NOT NULL,
+  status          VARCHAR(50) NOT NULL,
+  FOREIGN KEY (uploaded_by) REFERENCES users(id),
+  FOREIGN KEY (department_id) REFERENCES departments(id)
+);

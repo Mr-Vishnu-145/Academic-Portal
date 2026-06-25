@@ -3,6 +3,7 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
+import MarkImportPage from '../pages/MarkImportPage';
 import { Users, CheckSquare, Award, BookOpen, Calendar, HelpCircle, Save, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 import TimeDropdownPicker from '../components/common/TimeDropdownPicker';
@@ -66,6 +67,12 @@ const StaffLayout = ({ children }) => {
       return {
         title: 'Upload Test Marks',
         subtitle: 'Upload and grade student internal tests and CAT exams.'
+      };
+    }
+    if (path.endsWith('/import-marks')) {
+      return {
+        title: 'Mark Import & Auto Entry',
+        subtitle: 'Upload mark sheets and automatically extract, validate, and import marks.'
       };
     }
     if (path.endsWith('/assignments')) {
@@ -857,6 +864,7 @@ const StaffRoutes = () => {
         <Route path="students" element={<MyStudentsPage />} />
         <Route path="attendance" element={<MarkAttendancePage />} />
         <Route path="marks" element={<UploadMarksPage />} />
+        <Route path="import-marks" element={<MarkImportPage />} />
         <Route path="assignments" element={<ManageAssignmentsPage />} />
         <Route path="exams" element={<ExamScheduleManager />} />
       </Routes>
