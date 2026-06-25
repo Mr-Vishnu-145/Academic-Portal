@@ -342,7 +342,7 @@ const ExamScheduleManager = () => {
           
           {/* Filters card */}
           {user.role !== 'STUDENT' && (
-            <div className="glass-card" style={{ padding: '16px 24px' }}>
+            <div className="glass-card" style={{ padding: '16px 24px', zIndex: 10 }}>
               <h3 style={{ fontSize: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Layers size={18} /> Filters & Coverage
               </h3>
