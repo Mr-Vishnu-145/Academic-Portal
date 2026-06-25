@@ -560,6 +560,7 @@ const ExamScheduleManager = () => {
                       value={examDate} 
                       min={getTodayDateString()}
                       onChange={(e) => setExamDate(e.target.value)} 
+                      onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                       required 
                     />
                   </div>
@@ -571,6 +572,7 @@ const ExamScheduleManager = () => {
                       value={examTime} 
                       min={examDate === getTodayDateString() ? getCurrentTimeString() : undefined}
                       onChange={(e) => setExamTime(e.target.value)} 
+                      onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                       required 
                     />
                   </div>
@@ -722,6 +724,7 @@ const ExamScheduleManager = () => {
                   value={editDate} 
                   min={getTodayDateString()}
                   onChange={(e) => setEditDate(e.target.value)} 
+                  onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                   required 
                 />
               </div>
@@ -734,6 +737,7 @@ const ExamScheduleManager = () => {
                   value={editTime} 
                   min={editDate === getTodayDateString() ? getCurrentTimeString() : undefined}
                   onChange={(e) => setEditTime(e.target.value)} 
+                  onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                   required 
                 />
               </div>

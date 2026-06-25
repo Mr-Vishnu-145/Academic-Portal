@@ -412,6 +412,7 @@ const MarkAttendancePage = () => {
             value={classDate} 
             min={getTodayDateString()} 
             onChange={(e) => setClassDate(e.target.value)} 
+            onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
           />
         </div>
       </div>
@@ -629,6 +630,7 @@ const ManageAssignmentsPage = () => {
               value={dueDate} 
               min={getTodayDateString()} 
               onChange={(e) => setDueDate(e.target.value)} 
+              onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
               required 
             />
           </div>
@@ -724,6 +726,7 @@ const SetExamSchedulePage = () => {
               value={date} 
               min={getTodayDateString()} 
               onChange={(e) => setDate(e.target.value)} 
+              onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
               required 
             />
           </div>
@@ -735,6 +738,7 @@ const SetExamSchedulePage = () => {
               value={time} 
               min={date === getTodayDateString() ? getCurrentTimeString() : undefined} 
               onChange={(e) => setTime(e.target.value)} 
+              onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
               required 
             />
           </div>
