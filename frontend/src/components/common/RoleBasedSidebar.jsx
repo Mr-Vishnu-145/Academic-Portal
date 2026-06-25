@@ -20,26 +20,13 @@ import {
   Building,
   LogOut,
   Moon,
-  Sun,
-  ChevronDown
+  Sun
 } from 'lucide-react';
 
 const RoleBasedSidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const { user, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [themeDropdownOpen, setThemeDropdownOpen] = React.useState(false);
-  const themeDropdownRef = React.useRef(null);
-
-  React.useEffect(() => {
-    function handleClickOutside(event) {
-      if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target)) {
-        setThemeDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   if (!user) return null;
 
@@ -119,48 +106,14 @@ const RoleBasedSidebar = ({ sidebarOpen, setSidebarOpen }) => {
       </ul>
 
       <div className="sidebar-footer">
-        <div className="theme-selector-container" ref={themeDropdownRef} style={{ position: 'relative', marginBottom: '8px' }}>
-          <div 
-            className="menu-item theme-dropdown-trigger" 
-            onClick={() => setThemeDropdownOpen(!themeDropdownOpen)} 
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {theme === 'light' && <Sun size={20} />}
-              {theme === 'dark' && <Moon size={20} />}
-              <span style={{ textTransform: 'capitalize' }}>
-                {theme} Mode
-              </span>
-            </div>
-            <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: themeDropdownOpen ? 'rotate(180deg)' : 'none', opacity: 0.7 }} />
-          </div>
-
-          {themeDropdownOpen && (
-            <div className="theme-dropdown-menu">
-              <div 
-                className={`theme-dropdown-item ${theme === 'light' ? 'active' : ''}`}
-                onClick={() => {
-                  setTheme('light');
-                  setThemeDropdownOpen(false);
-                }}
-              >
-                <Sun size={16} />
-                <span>Light Mode</span>
-              </div>
-              <div 
-                className={`theme-dropdown-item ${theme === 'dark' ? 'active' : ''}`}
-                onClick={() => {
-                  setTheme('dark');
-                  setThemeDropdownOpen(false);
-                }}
-              >
-                <Moon size={16} />
-                <span>Dark Mode</span>
-              </div>
-            </div>
-          )}
+        <div 
+          className="menu-item" 
+          onClick={toggleTheme} 
+          style={{ cursor: 'pointer', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}
+        >
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
         </div>
-
         <div className="menu-item" onClick={handleLogout} style={{ color: 'var(--danger)', cursor: 'pointer' }}>
           <LogOut size={20} />
           <span>Logout</span>
