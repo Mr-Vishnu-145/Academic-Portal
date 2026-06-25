@@ -323,8 +323,8 @@ const FeesPage = () => {
       </div>
 
       {payModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyCenter: 'center', zIndex: 100, justifyContent: 'center' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
             <h3 style={{ marginBottom: '20px' }}>Make Fee Payment</h3>
             <form onSubmit={handlePay}>
               <div className="form-group">
@@ -690,8 +690,8 @@ const AssignmentPage = () => {
       </div>
 
       {submitModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyCenter: 'center', zIndex: 100, justifyContent: 'center' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
             <h3 style={{ marginBottom: '20px' }}>Upload Submission</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">

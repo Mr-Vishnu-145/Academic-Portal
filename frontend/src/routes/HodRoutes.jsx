@@ -231,8 +231,8 @@ const ManageStaffPage = () => {
       </div>
 
       {addModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyCenter: 'center', zIndex: 100, justifyContent: 'center' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
             <h3 style={{ marginBottom: '20px' }}>Register Department User</h3>
             {error && (
               <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', color: '#f87171' }}>
@@ -409,8 +409,8 @@ const DeptStudentsPage = () => {
       </div>
 
       {addModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyCenter: 'center', zIndex: 100, justifyContent: 'center' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
             <h3 style={{ marginBottom: '20px' }}>Register Department User</h3>
             {error && (
               <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', color: '#f87171' }}>
