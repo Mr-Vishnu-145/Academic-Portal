@@ -9,6 +9,22 @@ import {
 } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 
+const formatTime12Hour = (timeStr) => {
+  if (!timeStr) return '';
+  if (timeStr.includes('AM') || timeStr.includes('PM')) {
+    return timeStr;
+  }
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = hours < 10 ? '0' + hours : hours;
+  return `${strHours}:${minutes} ${ampm}`;
+};
+
 // Central Student Layout Shell
 const StudentLayout = ({ children }) => {
   const { user } = useAuth();
@@ -766,7 +782,7 @@ const ExamSchedulePage = () => {
                   <td>{s.subject.name}</td>
                   <td>{s.examType}</td>
                   <td>{s.examDate}</td>
-                  <td>{s.examTime}</td>
+                  <td>{formatTime12Hour(s.examTime)}</td>
                   <td>{s.hallNumber}</td>
                 </tr>
               ))}

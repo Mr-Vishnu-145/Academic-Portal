@@ -5,6 +5,24 @@ import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
 import { Users, CheckSquare, Award, BookOpen, Calendar, HelpCircle, Save, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
+import TimeDropdownPicker from '../components/common/TimeDropdownPicker';
+
+const formatTime12Hour = (timeStr) => {
+  if (!timeStr) return '';
+  if (timeStr.includes('AM') || timeStr.includes('PM')) {
+    return timeStr;
+  }
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = hours < 10 ? '0' + hours : hours;
+  return `${strHours}:${minutes} ${ampm}`;
+};
+
 const getCurrentTimeString = () => {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
@@ -754,14 +772,9 @@ const SetExamSchedulePage = () => {
           </div>
           <div className="form-group" style={{ flexGrow: 1 }}>
             <label className="form-label">Time Slot</label>
-            <input 
-              type="time" 
-              className="form-control" 
+            <TimeDropdownPicker 
               value={time} 
-              min={date === getTodayDateString() ? getCurrentTimeString() : undefined} 
               onChange={(e) => setTime(e.target.value)} 
-              onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
-              required 
             />
           </div>
         </div>

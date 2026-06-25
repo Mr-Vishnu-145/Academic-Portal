@@ -5,6 +5,7 @@ import {
   User, BookOpen, Layers, MapPin, Clock, Tag, RefreshCw, BarChart2, PieChart, ShieldAlert
 } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
+import TimeDropdownPicker from '../components/common/TimeDropdownPicker';
 
 const getCurrentTimeString = () => {
   const now = new Date();
@@ -14,6 +15,22 @@ const getCurrentTimeString = () => {
 };
 
 const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
+
+const formatTime12Hour = (timeStr) => {
+  if (!timeStr) return '';
+  if (timeStr.includes('AM') || timeStr.includes('PM')) {
+    return timeStr;
+  }
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = hours < 10 ? '0' + hours : hours;
+  return `${strHours}:${minutes} ${ampm}`;
+};
 
 const ExamScheduleManager = () => {
   const { user, authenticatedFetch } = useAuth();
@@ -469,7 +486,7 @@ const ExamScheduleManager = () => {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                         <Clock size={16} style={{ color: 'var(--primary)' }} />
-                        <span>{exam.examTime.substring(0, 5)}</span>
+                        <span>{formatTime12Hour(exam.examTime)}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                         <MapPin size={16} style={{ color: 'var(--accent)' }} />
@@ -577,14 +594,9 @@ const ExamScheduleManager = () => {
                   </div>
                   <div className="form-group" style={{ flexGrow: 1 }}>
                     <label className="form-label">Time Slot</label>
-                    <input 
-                      type="time" 
-                      className="form-control" 
+                    <TimeDropdownPicker 
                       value={examTime} 
-                      min={examDate === getTodayDateString() ? getCurrentTimeString() : undefined}
                       onChange={(e) => setExamTime(e.target.value)} 
-                      onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
-                      required 
                     />
                   </div>
                 </div>
@@ -738,14 +750,9 @@ const ExamScheduleManager = () => {
 
               <div className="form-group">
                 <label className="form-label">Time Slot</label>
-                <input 
-                  type="time" 
-                  className="form-control" 
+                <TimeDropdownPicker 
                   value={editTime} 
-                  min={editDate === getTodayDateString() ? getCurrentTimeString() : undefined}
                   onChange={(e) => setEditTime(e.target.value)} 
-                  onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
-                  required 
                 />
               </div>
 
