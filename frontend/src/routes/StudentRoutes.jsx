@@ -235,91 +235,93 @@ const FeesPage = () => {
   if (loading) return <div>Loading fees summary...</div>;
 
   return (
-    <div className="glass-card">
-      <h2 style={{ marginBottom: '24px' }}>Invoices & Fee Structure</h2>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
-        <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border-glow)' }}>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Total Fee Invoiced</div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>INR {summary?.totalDue}</div>
+    <>
+      <div className="glass-card">
+        <h2 style={{ marginBottom: '24px' }}>Invoices & Fee Structure</h2>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+          <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border-glow)' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Total Fee Invoiced</div>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>INR {summary?.totalDue}</div>
+          </div>
+          <div style={{ padding: '20px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+            <div style={{ fontSize: '13px', color: 'var(--success)' }}>Total Fee Paid</div>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--success)' }}>INR {summary?.totalPaid}</div>
+          </div>
+          <div style={{ padding: '20px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+            <div style={{ fontSize: '13px', color: 'var(--warning)' }}>Total Fee Pending</div>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--warning)' }}>INR {summary?.totalPending}</div>
+          </div>
         </div>
-        <div style={{ padding: '20px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
-          <div style={{ fontSize: '13px', color: 'var(--success)' }}>Total Fee Paid</div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--success)' }}>INR {summary?.totalPaid}</div>
-        </div>
-        <div style={{ padding: '20px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-          <div style={{ fontSize: '13px', color: 'var(--warning)' }}>Total Fee Pending</div>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--warning)' }}>INR {summary?.totalPending}</div>
-        </div>
-      </div>
 
-      <h3 style={{ marginBottom: '16px' }}>Pending Payments</h3>
-      {summary?.pendingFees?.length === 0 ? (
-        <div style={{ padding: '16px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', marginBottom: '32px' }}>No pending invoices.</div>
-      ) : (
-        <div className="table-container" style={{ marginBottom: '32px' }}>
+        <h3 style={{ marginBottom: '16px' }}>Pending Payments</h3>
+        {summary?.pendingFees?.length === 0 ? (
+          <div style={{ padding: '16px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', marginBottom: '32px' }}>No pending invoices.</div>
+        ) : (
+          <div className="table-container" style={{ marginBottom: '32px' }}>
+            <table className="portal-table">
+              <thead>
+                <tr>
+                  <th>Fee Type</th>
+                  <th>Total Cost</th>
+                  <th>Amount Paid</th>
+                  <th>Remaining</th>
+                  <th>Due Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary?.pendingFees?.map((fee) => (
+                  <tr key={fee.feeId}>
+                    <td style={{ fontWeight: '600' }}>{fee.feeType}</td>
+                    <td>INR {fee.amount}</td>
+                    <td>INR {fee.amountPaid}</td>
+                    <td style={{ color: 'var(--warning)', fontWeight: '600' }}>INR {fee.remaining}</td>
+                    <td>{fee.dueDate}</td>
+                    <td>
+                      <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => openPay(fee)}>Pay Now</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <h3 style={{ marginBottom: '16px' }}>Paid History & Receipts</h3>
+        <div className="table-container">
           <table className="portal-table">
             <thead>
               <tr>
                 <th>Fee Type</th>
-                <th>Total Cost</th>
                 <th>Amount Paid</th>
-                <th>Remaining</th>
-                <th>Due Date</th>
-                <th>Action</th>
+                <th>Payment Date</th>
+                <th>Receipt No</th>
+                <th>Receipt</th>
               </tr>
             </thead>
             <tbody>
-              {summary?.pendingFees?.map((fee) => (
+              {summary?.paidFees?.map((fee) => (
                 <tr key={fee.feeId}>
                   <td style={{ fontWeight: '600' }}>{fee.feeType}</td>
-                  <td>INR {fee.amount}</td>
                   <td>INR {fee.amountPaid}</td>
-                  <td style={{ color: 'var(--warning)', fontWeight: '600' }}>INR {fee.remaining}</td>
-                  <td>{fee.dueDate}</td>
+                  <td>{fee.paymentDate}</td>
+                  <td>{fee.receiptNumber}</td>
                   <td>
-                    <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => openPay(fee)}>Pay Now</button>
+                    <a
+                      href={fee.receiptUrl}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '13px', display: 'inline-flex', gap: '6px' }}
+                      download
+                    >
+                      <Download size={14} /> Download
+                    </a>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
-
-      <h3 style={{ marginBottom: '16px' }}>Paid History & Receipts</h3>
-      <div className="table-container">
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>Fee Type</th>
-              <th>Amount Paid</th>
-              <th>Payment Date</th>
-              <th>Receipt No</th>
-              <th>Receipt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary?.paidFees?.map((fee) => (
-              <tr key={fee.feeId}>
-                <td style={{ fontWeight: '600' }}>{fee.feeType}</td>
-                <td>INR {fee.amountPaid}</td>
-                <td>{fee.paymentDate}</td>
-                <td>{fee.receiptNumber}</td>
-                <td>
-                  <a
-                    href={fee.receiptUrl}
-                    className="btn btn-secondary"
-                    style={{ padding: '6px 12px', fontSize: '13px', display: 'inline-flex', gap: '6px' }}
-                    download
-                  >
-                    <Download size={14} /> Download
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       {payModal && (
@@ -355,7 +357,7 @@ const FeesPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
@@ -655,38 +657,40 @@ const AssignmentPage = () => {
   if (loading) return <div>Loading assignments...</div>;
 
   return (
-    <div className="glass-card">
-      <h2 style={{ marginBottom: '24px' }}>Course Assignments</h2>
-      <div className="table-container">
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Subject</th>
-              <th>Due Date</th>
-              <th>Max Marks</th>
-              <th>Upload Date / Submission</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assignments.map((asg) => (
-              <tr key={asg.id}>
-                <td style={{ fontWeight: '600' }}>
-                  <div>{asg.title}</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '400' }}>{asg.description}</div>
-                </td>
-                <td>{asg.subject.name}</td>
-                <td style={{ color: 'var(--warning)', fontWeight: '600' }}>{asg.dueDate}</td>
-                <td>{asg.maxMarks}</td>
-                <td>No submission yet</td>
-                <td>
-                  <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => openSubmit(asg)}>Upload</button>
-                </td>
+    <>
+      <div className="glass-card">
+        <h2 style={{ marginBottom: '24px' }}>Course Assignments</h2>
+        <div className="table-container">
+          <table className="portal-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Subject</th>
+                <th>Due Date</th>
+                <th>Max Marks</th>
+                <th>Upload Date / Submission</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {assignments.map((asg) => (
+                <tr key={asg.id}>
+                  <td style={{ fontWeight: '600' }}>
+                    <div>{asg.title}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '400' }}>{asg.description}</div>
+                  </td>
+                  <td>{asg.subject.name}</td>
+                  <td style={{ color: 'var(--warning)', fontWeight: '600' }}>{asg.dueDate}</td>
+                  <td>{asg.maxMarks}</td>
+                  <td>No submission yet</td>
+                  <td>
+                    <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => openSubmit(asg)}>Upload</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {submitModal && (
@@ -710,7 +714,7 @@ const AssignmentPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

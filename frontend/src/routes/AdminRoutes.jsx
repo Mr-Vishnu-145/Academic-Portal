@@ -330,63 +330,65 @@ const ManageAllUsersPage = () => {
   if (loading) return <div>Loading user accounts...</div>;
 
   return (
-    <div className="glass-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2>Global User Registry</h2>
-        <button className="btn btn-primary" onClick={() => setAddModal(true)} style={{ display: 'flex', gap: '8px' }}>
-          <PlusCircle size={18} /> Add User
-        </button>
-      </div>
+    <>
+      <div className="glass-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2>Global User Registry</h2>
+          <button className="btn btn-primary" onClick={() => setAddModal(true)} style={{ display: 'flex', gap: '8px' }}>
+            <PlusCircle size={18} /> Add User
+          </button>
+        </div>
 
-      <div className="table-container">
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Department</th>
-              <th>Details</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>{u.id}</td>
-                <td style={{ fontWeight: '600' }}>{u.name}</td>
-                <td>{u.email}</td>
-                <td>
-                  <span className={`badge ${u.role === 'ADMIN' ? 'badge-danger' : u.role === 'HOD' ? 'badge-pending' : 'badge-success'}`}>
-                    {u.role}
-                  </span>
-                </td>
-                <td>{u.department ? u.department.code : 'N/A'}</td>
-                <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  {u.role === 'STUDENT' ? `Reg: ${u.registerNumber} (Yr ${u.year})` : u.role === 'ADMIN' ? 'System Root' : `Staff: ${u.staffIdCode}`}
-                </td>
-                <td>
-                  <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
-                    {u.isActive ? 'Active' : 'Suspended'}
-                  </span>
-                </td>
-                <td>
-                  {u.isActive && u.role !== 'ADMIN' && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--danger)' }} onClick={() => handleDeactivate(u.id)}>
-                      Suspend
-                    </button>
-                  )}
-                </td>
+        <div className="table-container">
+          <table className="portal-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Details</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.id}</td>
+                  <td style={{ fontWeight: '600' }}>{u.name}</td>
+                  <td>{u.email}</td>
+                  <td>
+                    <span className={`badge ${u.role === 'ADMIN' ? 'badge-danger' : u.role === 'HOD' ? 'badge-pending' : 'badge-success'}`}>
+                      {u.role}
+                    </span>
+                  </td>
+                  <td>{u.department ? u.department.code : 'N/A'}</td>
+                  <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    {u.role === 'STUDENT' ? `Reg: ${u.registerNumber} (Yr ${u.year})` : u.role === 'ADMIN' ? 'System Root' : `Staff: ${u.staffIdCode}`}
+                  </td>
+                  <td>
+                    <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
+                      {u.isActive ? 'Active' : 'Suspended'}
+                    </span>
+                  </td>
+                  <td>
+                    {u.isActive && u.role !== 'ADMIN' && (
+                      <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--danger)' }} onClick={() => handleDeactivate(u.id)}>
+                        Suspend
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {addModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyCenter: 'center', zIndex: 100, justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center' }}>
           <div className="glass-card" style={{ width: '450px', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ marginBottom: '20px' }}>Register New User</h3>
             {error && (
@@ -465,7 +467,7 @@ const ManageAllUsersPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

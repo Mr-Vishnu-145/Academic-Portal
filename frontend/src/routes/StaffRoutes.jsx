@@ -215,38 +215,40 @@ const MyStudentsPage = () => {
   if (loading) return <div>Loading students...</div>;
 
   return (
-    <div className="glass-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2>Class Student Roster</h2>
-        <button className="btn btn-primary" onClick={() => setAddModal(true)} style={{ display: 'flex', gap: '8px' }}>
-          <PlusCircle size={18} /> Add Student
-        </button>
-      </div>
-      <div className="table-container">
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>Register Number</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((s) => (
-              <tr key={s.id}>
-                <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
-                <td>{s.name}</td>
-                <td>{s.email}</td>
-                <td>{s.phone}</td>
-                <td>
-                  <span className="badge badge-success">Active</span>
-                </td>
+    <>
+      <div className="glass-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2>Class Student Roster</h2>
+          <button className="btn btn-primary" onClick={() => setAddModal(true)} style={{ display: 'flex', gap: '8px' }}>
+            <PlusCircle size={18} /> Add Student
+          </button>
+        </div>
+        <div className="table-container">
+          <table className="portal-table">
+            <thead>
+              <tr>
+                <th>Register Number</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {students.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
+                  <td>{s.name}</td>
+                  <td>{s.email}</td>
+                  <td>{s.phone}</td>
+                  <td>
+                    <span className="badge badge-success">Active</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {addModal && (
@@ -298,7 +300,7 @@ const MyStudentsPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

@@ -197,37 +197,39 @@ const ManageStaffPage = () => {
   if (loading) return <div>Loading staff list...</div>;
 
   return (
-    <div className="glass-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2>Faculty & Staff Registry</h2>
-        <button className="btn btn-primary" onClick={() => { setRole('STAFF'); setAddModal(true); }} style={{ display: 'flex', gap: '8px' }}>
-          <PlusCircle size={18} /> Add Faculty
-        </button>
-      </div>
+    <>
+      <div className="glass-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2>Faculty & Staff Registry</h2>
+          <button className="btn btn-primary" onClick={() => { setRole('STAFF'); setAddModal(true); }} style={{ display: 'flex', gap: '8px' }}>
+            <PlusCircle size={18} /> Add Faculty
+          </button>
+        </div>
 
-      <div className="table-container">
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>Staff Code</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Assigned Year</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staffList.map((s) => (
-              <tr key={s.id}>
-                <td style={{ fontWeight: '600' }}>{s.staffIdCode}</td>
-                <td>{s.name}</td>
-                <td>{s.email}</td>
-                <td>{s.phone}</td>
-                <td style={{ fontWeight: '600', color: 'var(--primary)' }}>Year {s.year}</td>
+        <div className="table-container">
+          <table className="portal-table">
+            <thead>
+              <tr>
+                <th>Staff Code</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Assigned Year</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {staffList.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ fontWeight: '600' }}>{s.staffIdCode}</td>
+                  <td>{s.name}</td>
+                  <td>{s.email}</td>
+                  <td>{s.phone}</td>
+                  <td style={{ fontWeight: '600', color: 'var(--primary)' }}>Year {s.year}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {addModal && (
@@ -302,7 +304,7 @@ const ManageStaffPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
@@ -373,39 +375,41 @@ const DeptStudentsPage = () => {
   if (loading) return <div>Loading department students...</div>;
 
   return (
-    <div className="glass-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2>Department Student Demographics</h2>
-        <button className="btn btn-primary" onClick={() => { setRole('STUDENT'); setAddModal(true); }} style={{ display: 'flex', gap: '8px' }}>
-          <PlusCircle size={18} /> Add Student
-        </button>
-      </div>
+    <>
+      <div className="glass-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2>Department Student Demographics</h2>
+          <button className="btn btn-primary" onClick={() => { setRole('STUDENT'); setAddModal(true); }} style={{ display: 'flex', gap: '8px' }}>
+            <PlusCircle size={18} /> Add Student
+          </button>
+        </div>
 
-      <div className="table-container">
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>Register Number</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Year</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((s) => (
-              <tr key={s.id}>
-                <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
-                <td>{s.name}</td>
-                <td>{s.email}</td>
-                <td>Year {s.year}</td>
-                <td>
-                  <span className="badge badge-success">Active</span>
-                </td>
+        <div className="table-container">
+          <table className="portal-table">
+            <thead>
+              <tr>
+                <th>Register Number</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Year</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {students.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
+                  <td>{s.name}</td>
+                  <td>{s.email}</td>
+                  <td>Year {s.year}</td>
+                  <td>
+                    <span className="badge badge-success">Active</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {addModal && (
@@ -480,7 +484,7 @@ const DeptStudentsPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
