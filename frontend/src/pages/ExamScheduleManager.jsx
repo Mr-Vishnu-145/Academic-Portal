@@ -43,6 +43,9 @@ const ExamScheduleManager = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [createSuccess, setCreateSuccess] = useState('');
+  const [editError, setEditError] = useState('');
 
   // Form states (Create)
   const [selectedSub, setSelectedSub] = useState('');
@@ -129,23 +132,25 @@ const ExamScheduleManager = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setCreateError('');
+    setCreateSuccess('');
     setError('');
     setSuccess('');
 
     if (!examDate || examDate.trim() === '') {
-      setError('Exam Date is required.');
+      setCreateError('Exam Date is required.');
       setSaving(false);
       return;
     }
     if (!examTime || examTime.trim() === '') {
-      setError('Time Slot is required.');
+      setCreateError('Time Slot is required.');
       setSaving(false);
       return;
     }
 
     const todayStr = getTodayDateString();
     if (examDate < todayStr) {
-      setError('Selected date is in the past. Please choose today or a future date.');
+      setCreateError('Selected date is in the past. Please choose today or a future date.');
       setSaving(false);
       return;
     }
@@ -160,7 +165,7 @@ const ExamScheduleManager = () => {
         const selHours = parseInt(timeParts[0], 10);
         const selMinutes = parseInt(timeParts[1], 10);
         if (selHours < currentHours || (selHours === currentHours && selMinutes < currentMinutes)) {
-          setError('Selected time is in the past. Please choose a future time.');
+          setCreateError('Selected time is in the past. Please choose a future time.');
           setSaving(false);
           return;
         }
@@ -186,18 +191,18 @@ const ExamScheduleManager = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setSuccess('Exam scheduled successfully!');
+        setCreateSuccess('Exam scheduled successfully!');
         setExamDate('');
         setExamTime('');
         setHallNumber('');
         setSection('');
         fetchData();
       } else {
-        setError(data.error || 'Failed to schedule exam.');
+        setCreateError(data.error || 'Failed to schedule exam.');
       }
     } catch (err) {
       console.error(err);
-      setError('An error occurred. Please try again.');
+      setCreateError('An error occurred. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -206,23 +211,24 @@ const ExamScheduleManager = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     setUpdating(true);
+    setEditError('');
     setError('');
     setSuccess('');
 
     if (!editDate || editDate.trim() === '') {
-      setError('Exam Date is required.');
+      setEditError('Exam Date is required.');
       setUpdating(false);
       return;
     }
     if (!editTime || editTime.trim() === '') {
-      setError('Time Slot is required.');
+      setEditError('Time Slot is required.');
       setUpdating(false);
       return;
     }
 
     const todayStr = getTodayDateString();
     if (editDate < todayStr) {
-      setError('Selected date is in the past. Please choose today or a future date.');
+      setEditError('Selected date is in the past. Please choose today or a future date.');
       setUpdating(false);
       return;
     }
@@ -237,7 +243,7 @@ const ExamScheduleManager = () => {
         const selHours = parseInt(timeParts[0], 10);
         const selMinutes = parseInt(timeParts[1], 10);
         if (selHours < currentHours || (selHours === currentHours && selMinutes < currentMinutes)) {
-          setError('Selected time is in the past. Please choose a future time.');
+          setEditError('Selected time is in the past. Please choose a future time.');
           setUpdating(false);
           return;
         }
@@ -260,11 +266,11 @@ const ExamScheduleManager = () => {
         setEditingExam(null);
         fetchData();
       } else {
-        setError(data.error || 'Failed to update exam schedule.');
+        setEditError(data.error || 'Failed to update exam schedule.');
       }
     } catch (err) {
       console.error(err);
-      setError('An error occurred. Please try again.');
+      setEditError('An error occurred. Please try again.');
     } finally {
       setUpdating(false);
     }
@@ -300,6 +306,7 @@ const ExamScheduleManager = () => {
     setEditTime(exam.examTime.substring(0, 5));
     setEditHall(exam.hallNumber);
     setEditStatus(exam.status);
+    setEditError('');
   };
 
   // Helper to format Date
@@ -623,6 +630,19 @@ const ExamScheduleManager = () => {
                 <PlusCircle size={22} style={{ color: 'var(--primary)' }} /> Schedule Exam
               </h2>
 
+              {createError && (
+                 <div className="alert-banner alert-banner-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                   <AlertCircle size={20} />
+                   <span>{createError}</span>
+                 </div>
+               )}
+               {createSuccess && (
+                 <div className="alert-banner alert-banner-success" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                   <CheckCircle size={20} />
+                   <span>{createSuccess}</span>
+                 </div>
+               )}
+
               <form onSubmit={handleCreate}>
                 
                 {/* Admin only: Select Department */}
@@ -798,6 +818,14 @@ const ExamScheduleManager = () => {
             <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Edit size={20} style={{ color: 'var(--primary)' }} /> Edit Exam Schedule
             </h3>
+
+            {editError && (
+               <div className="alert-banner alert-banner-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                 <AlertCircle size={20} />
+                 <span>{editError}</span>
+               </div>
+             )}
+
             <form onSubmit={handleUpdate}>
               
               <div className="form-group">
