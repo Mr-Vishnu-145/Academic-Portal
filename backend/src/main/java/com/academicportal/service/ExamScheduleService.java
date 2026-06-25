@@ -28,6 +28,14 @@ public class ExamScheduleService {
     @Transactional
     public Assessment createExamSchedule(Integer subjectId, String examTypeStr, LocalDate date,
                                         LocalTime time, String hallNumber, User creator) {
+        LocalDate today = LocalDate.now();
+        if (date.isBefore(today)) {
+            throw new IllegalArgumentException("Selected date is in the past.");
+        }
+        if (date.isEqual(today) && time.isBefore(LocalTime.now())) {
+            throw new IllegalArgumentException("Selected time is in the past.");
+        }
+
         Subject subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new IllegalArgumentException("Subject not found"));
 

@@ -75,17 +75,26 @@ public class ExamScheduleController {
             Department department = departmentRepository.findById(request.getDepartmentId())
                     .orElseThrow(() -> new IllegalArgumentException("Department not found"));
 
-            ExamSchedule examSchedule = new ExamSchedule();
-            examSchedule.setSubject(subject);
-            examSchedule.setDepartment(department);
-            examSchedule.setExamDate(LocalDate.parse(request.getExamDate()));
-            
-            // Format time properly
+            LocalDate parsedDate = LocalDate.parse(request.getExamDate());
             String timeStr = request.getExamTime();
             if (timeStr.length() == 5) { // HH:mm
                 timeStr += ":00";
             }
-            examSchedule.setExamTime(LocalTime.parse(timeStr));
+            LocalTime parsedTime = LocalTime.parse(timeStr);
+
+            LocalDate today = LocalDate.now();
+            if (parsedDate.isBefore(today)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Selected date is in the past."));
+            }
+            if (parsedDate.isEqual(today) && parsedTime.isBefore(LocalTime.now())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Selected time is in the past."));
+            }
+
+            ExamSchedule examSchedule = new ExamSchedule();
+            examSchedule.setSubject(subject);
+            examSchedule.setDepartment(department);
+            examSchedule.setExamDate(parsedDate);
+            examSchedule.setExamTime(parsedTime);
             
             examSchedule.setHallNumber(request.getHallNumber());
             examSchedule.setUploadedBy(user);
@@ -153,8 +162,11 @@ public class ExamScheduleController {
                 examSchedule.setSubject(subject);
             }
 
+            LocalDate dateToValidate = examSchedule.getExamDate();
+            LocalTime timeToValidate = examSchedule.getExamTime();
+
             if (request.getExamDate() != null) {
-                examSchedule.setExamDate(LocalDate.parse(request.getExamDate()));
+                dateToValidate = LocalDate.parse(request.getExamDate());
             }
 
             if (request.getExamTime() != null) {
@@ -162,7 +174,23 @@ public class ExamScheduleController {
                 if (timeStr.length() == 5) {
                     timeStr += ":00";
                 }
-                examSchedule.setExamTime(LocalTime.parse(timeStr));
+                timeToValidate = LocalTime.parse(timeStr);
+            }
+
+            LocalDate today = LocalDate.now();
+            if (dateToValidate.isBefore(today)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Selected date is in the past."));
+            }
+            if (dateToValidate.isEqual(today) && timeToValidate.isBefore(LocalTime.now())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Selected time is in the past."));
+            }
+
+            if (request.getExamDate() != null) {
+                examSchedule.setExamDate(dateToValidate);
+            }
+
+            if (request.getExamTime() != null) {
+                examSchedule.setExamTime(timeToValidate);
             }
 
             if (request.getHallNumber() != null) {

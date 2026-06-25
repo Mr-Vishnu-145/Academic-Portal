@@ -719,6 +719,41 @@ const SetExamSchedulePage = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      if (!date || date.trim() === '') {
+        alert('Exam Date is required.');
+        setSaving(false);
+        return;
+      }
+      if (!time || time.trim() === '') {
+        alert('Time Slot is required.');
+        setSaving(false);
+        return;
+      }
+
+      const todayStr = getTodayDateString();
+      if (date < todayStr) {
+        alert('Selected date is in the past. Please choose today or a future date.');
+        setSaving(false);
+        return;
+      }
+
+      if (date === todayStr) {
+        const now = new Date();
+        const currentHours = now.getHours();
+        const currentMinutes = now.getMinutes();
+        
+        const timeParts = time.split(':');
+        if (timeParts.length >= 2) {
+          const selHours = parseInt(timeParts[0], 10);
+          const selMinutes = parseInt(timeParts[1], 10);
+          if (selHours < currentHours || (selHours === currentHours && selMinutes < currentMinutes)) {
+            alert('Selected time is in the past. Please choose a future time.');
+            setSaving(false);
+            return;
+          }
+        }
+      }
+
       const response = await authenticatedFetch('/api/staff/exams/create', {
         method: 'POST',
         body: JSON.stringify({
@@ -732,10 +767,15 @@ const SetExamSchedulePage = () => {
       if (response.ok) {
         alert('Exam schedule updated.');
         setDate('');
+        setTime('');
         setHall('');
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update exam schedule.');
       }
     } catch (err) {
       console.error(err);
+      alert('An error occurred. Please try again.');
     } finally {
       setSaving(false);
     }

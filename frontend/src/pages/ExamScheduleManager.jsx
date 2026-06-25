@@ -132,6 +132,41 @@ const ExamScheduleManager = () => {
     setError('');
     setSuccess('');
 
+    if (!examDate || examDate.trim() === '') {
+      setError('Exam Date is required.');
+      setSaving(false);
+      return;
+    }
+    if (!examTime || examTime.trim() === '') {
+      setError('Time Slot is required.');
+      setSaving(false);
+      return;
+    }
+
+    const todayStr = getTodayDateString();
+    if (examDate < todayStr) {
+      setError('Selected date is in the past. Please choose today or a future date.');
+      setSaving(false);
+      return;
+    }
+
+    if (examDate === todayStr) {
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      
+      const timeParts = examTime.split(':');
+      if (timeParts.length >= 2) {
+        const selHours = parseInt(timeParts[0], 10);
+        const selMinutes = parseInt(timeParts[1], 10);
+        if (selHours < currentHours || (selHours === currentHours && selMinutes < currentMinutes)) {
+          setError('Selected time is in the past. Please choose a future time.');
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     const payload = {
       subjectId: parseInt(selectedSub),
       examDate,
@@ -173,6 +208,41 @@ const ExamScheduleManager = () => {
     setUpdating(true);
     setError('');
     setSuccess('');
+
+    if (!editDate || editDate.trim() === '') {
+      setError('Exam Date is required.');
+      setUpdating(false);
+      return;
+    }
+    if (!editTime || editTime.trim() === '') {
+      setError('Time Slot is required.');
+      setUpdating(false);
+      return;
+    }
+
+    const todayStr = getTodayDateString();
+    if (editDate < todayStr) {
+      setError('Selected date is in the past. Please choose today or a future date.');
+      setUpdating(false);
+      return;
+    }
+
+    if (editDate === todayStr) {
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      
+      const timeParts = editTime.split(':');
+      if (timeParts.length >= 2) {
+        const selHours = parseInt(timeParts[0], 10);
+        const selMinutes = parseInt(timeParts[1], 10);
+        if (selHours < currentHours || (selHours === currentHours && selMinutes < currentMinutes)) {
+          setError('Selected time is in the past. Please choose a future time.');
+          setUpdating(false);
+          return;
+        }
+      }
+    }
 
     try {
       const response = await authenticatedFetch(`/api/exams/${editingExam.id}`, {

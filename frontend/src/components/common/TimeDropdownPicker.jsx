@@ -13,7 +13,7 @@ const TimeDropdownPicker = ({ value, onChange, disabled = false, isEdit = false 
 
   // Parse value (HH:MM or HH:MM:SS or HH:MM AM/PM) into 12-hour parts
   const parseTime = (timeStr) => {
-    if (!timeStr) return { hour: '12', minute: '00', period: 'AM' };
+    if (!timeStr || timeStr === '') return { hour: '', minute: '', period: '' };
     
     const normalized = timeStr.trim().toUpperCase();
     
@@ -83,9 +83,9 @@ const TimeDropdownPicker = ({ value, onChange, disabled = false, isEdit = false 
     // Lock interaction tracker
     setIsManuallySet(true);
 
-    let currentHour = hour;
-    let currentMinute = minute;
-    let currentPeriod = period;
+    let currentHour = hour || '12';
+    let currentMinute = minute || '00';
+    let currentPeriod = period || 'AM';
 
     if (changedPart === 'hour') currentHour = newVal;
     else if (changedPart === 'minute') currentMinute = newVal;
