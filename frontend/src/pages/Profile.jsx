@@ -44,8 +44,18 @@ const Profile = () => {
       return;
     }
 
-    if (newPassword.length < 4) {
-      setError('Password must be at least 4 characters long');
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasNumbers = /\d/.test(newPassword);
+    const hasNonalphas = /[^A-Za-z0-9]/.test(newPassword);
+
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
+    if (!hasUppercase || !hasLowercase || !hasNumbers || !hasNonalphas) {
+      setError('Password requires a mix of uppercase letters, lowercase letters, numbers, and symbols');
       return;
     }
 
@@ -250,6 +260,9 @@ const Profile = () => {
                 {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+              Requires 8+ characters, mixing uppercase, lowercase, numbers, and symbols.
+            </span>
           </div>
 
           <div className="form-group" style={{ marginBottom: '24px' }}>
