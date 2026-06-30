@@ -1,14 +1,14 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
     name: backend
   datasource:
-    url: jdbc:mysql://localhost:3306/academic_portal?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: ${DB_URL:jdbc:mysql://localhost:3306/academic_portal?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: root
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
   jpa:
     hibernate:
       ddl-auto: none
@@ -26,6 +26,5 @@ spring:
 
 app:
   jwt:
-    # 256-bit base64-encoded secret key
-    secret: 4d617468656d6174696373416e64436f6d7075746572536369656e6365526f636b735f5f5f5f5f5f5f5f5f5f
-    expiration: 86400000 # 24 hours in milliseconds
+    secret: ${JWT_SECRET:4d617468656d6174696373416e64436f6d7075746572536369656e6365526f636b735f5f5f5f5f5f5f5f5f5f}
+    expiration: ${JWT_EXPIRATION:86400000}
