@@ -71,27 +71,45 @@ public class CgpaCalculationService {
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
 
         double sgpaVal = calculateSGPA(studentId, semester);
-        
+
         List<SemesterResult> results = resultRepository.findByStudentIdAndSemester(studentId, semester);
         int semesterCredits = results.stream().mapToInt(SemesterResult::getCredits).sum();
 
-        // Check if summary already exists for this semester
+        // Step 1: Calculate CGPA from existing saved summaries BEFORE touching this semester's row.
+        // This avoids the NOT NULL constraint violation on 'cgpa' during a premature saveAndFlush.
+        double cgpaVal = 0.0;
+        List<CgpaSummary> existingSummaries = cgpaSummaryRepository.findByStudentId(studentId);
+        if (existingSummaries.isEmpty()) {
+            // Very first semester — CGPA equals SGPA
+            cgpaVal = sgpaVal;
+        } else {
+            // Include all other semesters + this semester's contribution
+            double totalWeighted = 0;
+            int totalCredits = 0;
+            for (CgpaSummary sem : existingSummaries) {
+                if (sem.getSemester() != semester) { // exclude current semester row if it already exists
+                    totalWeighted += sem.getSgpa().doubleValue() * sem.getTotalCredits();
+                    totalCredits += sem.getTotalCredits();
+                }
+            }
+            // Add current semester contribution
+            totalWeighted += sgpaVal * semesterCredits;
+            totalCredits += semesterCredits;
+            cgpaVal = (totalCredits == 0) ? 0.0 : totalWeighted / totalCredits;
+        }
+
+        // Step 2: Load or create summary row, then set ALL fields before saving.
         Optional<CgpaSummary> existingOpt = cgpaSummaryRepository.findByStudentIdAndSemester(studentId, semester);
         CgpaSummary summary = existingOpt.orElse(new CgpaSummary());
-        
+
         summary.setStudent(student);
         summary.setSemester(semester);
         summary.setSgpa(BigDecimal.valueOf(sgpaVal).setScale(2, RoundingMode.HALF_UP));
-        summary.setTotalCredits(semesterCredits);
-        
-        // Save first so it's included in CGPA calculations
-        cgpaSummaryRepository.saveAndFlush(summary);
-        
-        // Now calculate cumulative CGPA
-        double cgpaVal = calculateCGPA(studentId);
         summary.setCgpa(BigDecimal.valueOf(cgpaVal).setScale(2, RoundingMode.HALF_UP));
+        summary.setTotalCredits(semesterCredits);
         summary.setCalculatedAt(LocalDateTime.now());
-        
+
+        // Step 3: Single save — all non-nullable fields are populated.
         return cgpaSummaryRepository.save(summary);
     }
 }

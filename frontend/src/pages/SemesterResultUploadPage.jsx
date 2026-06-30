@@ -1,32 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
-import { createWorker } from 'tesseract.js';
 import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/common/CustomSelect';
 import { 
   UploadCloud, FileSpreadsheet, CheckCircle, AlertTriangle, 
   Trash2, AlertCircle, Calendar, RefreshCw, Save, Edit2, Check, Download,
-  Settings
+  Settings, Info
 } from 'lucide-react';
 
-const MarkImportPage = () => {
+const SemesterResultUploadPage = () => {
   const { user, authenticatedFetch } = useAuth();
   const fileInputRef = useRef(null);
 
   // Core States
   const [fileName, setFileName] = useState('');
-  const [marksScope, setMarksScope] = useState('Internal Assessment 1');
-  const [customAssessmentName, setCustomAssessmentName] = useState('');
-  const description = '';
-  const comments = '';
+  const [selectedSemester, setSelectedSemester] = useState('1');
+  const [academicYear, setAcademicYear] = useState('2025-2026');
+  const [targetDeptId, setTargetDeptId] = useState(
+    user?.role === 'HOD' && user?.departmentId ? user.departmentId.toString() : ''
+  );
+  const [departments, setDepartments] = useState([]);
   const [validationError, setValidationError] = useState('');
   const [referenceData, setReferenceData] = useState({ students: [], subjects: [], assessments: [], existingResults: [] });
   const [parsedRecords, setParsedRecords] = useState([]);
   const [history, setHistory] = useState([]);
 
-  const importType = (marksScope === 'Semester Examination') ? 'SEMESTER' : 'INTERNAL';
-  const assessmentType = (marksScope === 'Others') ? customAssessmentName : marksScope;
+  const importType = 'SEMESTER';
+  const assessmentType = 'Semester Examination';
   
   // Loading & UI States
   const [loadingRef, setLoadingRef] = useState(true);
@@ -55,20 +56,32 @@ const MarkImportPage = () => {
   const headerAliases = {
     registerNumber: ['regno', 'rollno', 'studentcode', 'studentid', 'studentnumber', 'regnumber', 'registernumber', 'register', 'student', 'regno.'],
     studentName: ['studentname', 'name', 'fullname', 'fname', 'sname'],
-    subjectCode: ['subjectcode', 'subcode', 'subjectid', 'coursecode', 'code', 'sub_code', 'subject_code'],
-    subjectName: ['subjectname', 'subject', 'coursename', 'subname', 'subject_name'],
-    internalMarks: ['internal', 'internalmarks', 'int', 'internalmark', 'intmark', 'internal_marks'],
-    externalMarks: ['external', 'externalmarks', 'ext', 'externalmark', 'extmark', 'external_marks'],
-    totalMarks: ['total', 'totalmarks', 'tot', 'totalmark', 'totmark', 'total_marks'],
+    departmentName: ['department', 'departmentname', 'dept', 'deptname', 'department_name', 'dept_name', 'college', 'branch'],
+    subjectCode: ['subjectcode', 'subcode', 'subjectid', 'coursecode', 'subjectcode', 'sub_code', 'subject_code'],
+    subjectName: ['subjectname', 'coursename', 'subname', 'subject_name'],
+    internalMarks: ['internal', 'internalmarks', 'internalmark', 'intmark', 'internal_marks', 'int_marks'],
+    externalMarks: ['external', 'externalmarks', 'externalmark', 'extmark', 'external_marks', 'ext_marks'],
+    totalMarks: ['totalmarks', 'totalmark', 'totmark', 'total_marks', 'total'],
     grade: ['grade', 'lettergrade', 'classgrade'],
-    percentage: ['percentage', 'pct', 'percent', 'percentage%', 'percentage_score'],
-    resultStatus: ['result', 'resultstatus', 'status', 'passfail', 'result_status']
+    percentage: ['percentage', 'pct', 'percent', 'percentage_score'],
+    resultStatus: ['resultstatus', 'result_status', 'passfail', 'status', 'result']
   };
 
-  // Fetch Reference Data & History
+  // Fetch Reference Data, Departments & History
   const loadData = async () => {
     setLoadingRef(true);
     try {
+      // Fetch departments
+      const deptRes = await authenticatedFetch('/api/admin/departments');
+      if (deptRes.ok) {
+        const deptData = await deptRes.json();
+        setDepartments(deptData);
+        // Default target department — HOD is pre-set from state initializer, admin defaults to first
+        if (user.role !== 'HOD' && deptData.length > 0) {
+          setTargetDeptId(prev => prev || deptData[0].id.toString());
+        }
+      }
+
       const refRes = await authenticatedFetch('/api/marks/import/reference-data');
       if (refRes.ok) {
         const refData = await refRes.json();
@@ -78,7 +91,9 @@ const MarkImportPage = () => {
       const histRes = await authenticatedFetch('/api/marks/import/history');
       if (histRes.ok) {
         const histData = await histRes.json();
-        setHistory(histData);
+        // Filter history to only show Semester Results uploads
+        const semHist = histData.filter(log => log.assessmentType === 'Semester Examination');
+        setHistory(semHist);
       }
     } catch (err) {
       console.error(err);
@@ -143,20 +158,21 @@ const MarkImportPage = () => {
   };
 
   // Smart Fuzzy Column Mapping Logic
-  const performSmartMatchAndValidation = (rawRows) => {
+  const performSmartMatchAndValidation = (rawRows, deptId = targetDeptId, semId = selectedSemester) => {
     if (rawRows.length === 0) return [];
 
-    // Find headers of the rawRows object
     const rawHeaders = Object.keys(rawRows[0]);
     const headerMapping = {};
 
     const mapHeader = (rawHeader) => {
       const normalized = rawHeader.toLowerCase().trim().replace(/[\s_-]+/g, '');
+      // Exact match first
       for (const [key, aliasList] of Object.entries(headerAliases)) {
         if (aliasList.includes(normalized)) {
           return key;
         }
       }
+      // Partial match fallback
       for (const [key, aliasList] of Object.entries(headerAliases)) {
         if (aliasList.some(alias => normalized.includes(alias))) {
           return key;
@@ -167,12 +183,11 @@ const MarkImportPage = () => {
 
     rawHeaders.forEach(h => {
       const mapped = mapHeader(h);
-      if (mapped) {
+      if (mapped && !headerMapping[mapped]) { // first match wins
         headerMapping[mapped] = h;
       }
     });
 
-    // Helper to get val by key or fallback
     const getVal = (row, key, defaultValue = '') => {
       const rawHeader = headerMapping[key];
       if (rawHeader !== undefined) {
@@ -188,17 +203,18 @@ const MarkImportPage = () => {
 
     const studentsMap = new Map(referenceData.students.map(s => [s.registerNumber.toUpperCase(), s]));
     const subjectsMap = new Map(referenceData.subjects.map(s => [s.code.toUpperCase(), s]));
-    
-    // Existing DB results set for update detection: key = "registerNumber-subjectCode"
     const existingInDB = new Set(
       referenceData.existingResults?.map(r => `${r.studentRegisterNumber.toUpperCase()}-${r.subjectCode.toUpperCase()}`) || []
     );
 
     const seenInFile = new Set();
+    const targetDeptIdNum = parseInt(deptId);
+    const targetSemNum = parseInt(semId);
 
     return rawRows.map((row) => {
       const rawReg = getVal(row, 'registerNumber', '');
       const rawName = getVal(row, 'studentName', '');
+      const rawDeptName = getVal(row, 'departmentName', '');
       const rawSub = getVal(row, 'subjectCode', '');
       const rawSubName = getVal(row, 'subjectName', '');
       const rawInternal = getVal(row, 'internalMarks', '');
@@ -220,7 +236,8 @@ const MarkImportPage = () => {
       const record = {
         registerNumber: rawReg,
         studentName: student ? student.name : (rawName || 'Unknown Student'),
-        departmentName: student ? (student.departmentName || 'N/A') : 'N/A',
+        // CSV department takes priority, then DB lookup
+        departmentName: rawDeptName || (student ? (student.departmentName || 'N/A') : 'N/A'),
         subjectCode: rawSub,
         subjectName: subject ? subject.name : (rawSubName || 'Unknown Subject'),
         internalMarks: rawInternal,
@@ -241,7 +258,10 @@ const MarkImportPage = () => {
         record.errors.push('Register Number is missing');
       } else if (!student) {
         record.isValid = false;
-        record.errors.push('Student not found in your assigned roster');
+        record.errors.push('Student not found in database');
+      } else if (!isNaN(targetDeptIdNum) && student.departmentId !== targetDeptIdNum) {
+        record.isValid = false;
+        record.errors.push(`Student is from "${student.departmentName || 'dept ' + student.departmentId}", not the selected department`);
       }
 
       if (!rawSub) {
@@ -249,7 +269,16 @@ const MarkImportPage = () => {
         record.errors.push('Subject Code is missing');
       } else if (!subject) {
         record.isValid = false;
-        record.errors.push('Subject Code is invalid or unassigned');
+        record.errors.push('Subject Code is invalid or not found');
+      } else {
+        if (!isNaN(targetSemNum) && subject.semester !== targetSemNum) {
+          record.isValid = false;
+          record.errors.push(`Subject "${rawSub}" is in Semester ${subject.semester} — please select Semester ${subject.semester} in the dropdown`);
+        }
+        if (!isNaN(targetDeptIdNum) && subject.departmentId !== targetDeptIdNum) {
+          record.isValid = false;
+          record.errors.push(`Subject "${rawSub}" belongs to a different department`);
+        }
       }
 
       // Check marks range
@@ -257,21 +286,21 @@ const MarkImportPage = () => {
         const val = parseFloat(rawInternal);
         if (isNaN(val) || val < 0 || val > 100) {
           record.isValid = false;
-          record.errors.push('Internal marks must be between 0 and 100');
+          record.errors.push('Internal marks must be a number between 0 and 100');
         }
       }
       if (rawExternal !== '') {
         const val = parseFloat(rawExternal);
         if (isNaN(val) || val < 0 || val > 100) {
           record.isValid = false;
-          record.errors.push('External marks must be between 0 and 100');
+          record.errors.push('External marks must be a number between 0 and 100');
         }
       }
       if (rawTotal !== '') {
         const val = parseFloat(rawTotal);
         if (isNaN(val) || val < 0 || val > 200) {
           record.isValid = false;
-          record.errors.push('Total marks must be between 0 and 200');
+          record.errors.push('Total marks must be a number between 0 and 200');
         }
       }
 
@@ -280,7 +309,7 @@ const MarkImportPage = () => {
         const validGrades = ['O', 'A+', 'A', 'B+', 'B', 'C', 'U', 'RA', 'F', 'AB'];
         if (!validGrades.includes(rawGrade.trim().toUpperCase())) {
           record.isValid = false;
-          record.errors.push('Grade must be O, A+, A, B+, B, C, U, RA, F, or AB');
+          record.errors.push(`Grade "${rawGrade}" is invalid — valid grades: O, A+, A, B+, B, C, U, RA, F, AB`);
         }
       }
 
@@ -290,6 +319,11 @@ const MarkImportPage = () => {
 
   // File Processor
   const processFile = async (file) => {
+    if (!targetDeptId) {
+      setError('Please wait — department data is still loading. Try again in a moment.');
+      return;
+    }
+
     setFileName(file.name);
     setProcessing(true);
     setUploadProgress(10);
@@ -325,7 +359,7 @@ const MarkImportPage = () => {
         }
         setUploadProgress(80);
       } 
-      else if (extension === 'docx') {
+      else if (extension === 'docx' || extension === 'doc') {
         const buffer = await file.arrayBuffer();
         setUploadProgress(40);
         const convertResult = await mammoth.convertToHtml({ arrayBuffer: buffer });
@@ -348,105 +382,36 @@ const MarkImportPage = () => {
         }
         setUploadProgress(90);
       } 
-      else if (extension === 'png' || extension === 'jpg' || extension === 'jpeg' || extension === 'pdf') {
+      else if (extension === 'pdf') {
         setUploadProgress(30);
+        const text = await file.text();
+        const regex = /([2-9][0-9][A-Z]{2}[0-9]{3,4})[\s,]+([A-Z0-9]{4,8})[\s,]+([0-9]{1,3})([\s,]+([0-9]{1,3}))?([\s,]+([0-9]{1,3}))?/gi;
+        let match;
+        const extractedRows = [];
+        while ((match = regex.exec(text)) !== null) {
+          extractedRows.push({
+            "Register Number": match[1],
+            "Subject Code": match[2],
+            "Internal Mark": match[3] || '',
+            "External Mark": match[4] || '',
+            "Total Mark": match[5] || ''
+          });
+        }
         
-        if (extension === 'pdf') {
-          // Standard text extraction fallback
-          const text = await file.text();
-          // Extract matching register number, subject code, marks
-          const regex = /([2-9][0-9][A-Z]{2}[0-9]{3,4})[\s,]+([A-Z0-9]{4,8})[\s,]+([0-9]{1,3})([\s,]+([0-9]{1,3}))?([\s,]+([0-9]{1,3}))?/gi;
-          let match;
-          const extractedRows = [];
-          while ((match = regex.exec(text)) !== null) {
-            extractedRows.push({
-              "Register Number": match[1],
-              "Subject Code": match[2],
-              "Internal Mark": match[3] || '',
-              "External Mark": match[4] || '',
-              "Total Mark": match[5] || ''
-            });
-          }
-          
-          if (extractedRows.length > 0) {
-            rawRows = extractedRows;
-            setUploadProgress(90);
-          } else {
-            throw new Error("Could not extract clean text from PDF directly. If this is a scanned document, please convert to image first.");
-          }
+        if (extractedRows.length > 0) {
+          rawRows = extractedRows;
+          setUploadProgress(90);
         } else {
-          // Image OCR processing
-          const reader = new FileReader();
-          reader.onload = async () => {
-            try {
-              const imageSrc = reader.result;
-              const worker = await createWorker('eng');
-              setUploadProgress(60);
-              const { data: { text } } = await worker.recognize(imageSrc);
-              await worker.terminate();
-              
-              const lines = text.split('\n');
-              const extractedRows = [];
-              
-              lines.forEach(line => {
-                const parts = line.split(/\s+/).filter(Boolean);
-                if (parts.length >= 3) {
-                  const regIdx = parts.findIndex(p => /^[a-z0-9]{4,15}$/i.test(p));
-                  const subIdx = parts.findIndex(p => /^[a-z]{3,4}[0-9]{3,4}$/i.test(p));
-                  
-                  if (regIdx !== -1 && subIdx !== -1) {
-                    const reg = parts[regIdx];
-                    const sub = parts[subIdx];
-                    const remaining = parts.filter((_, idx) => idx !== regIdx && idx !== subIdx);
-                    
-                    const marks = remaining.filter(p => !isNaN(parseFloat(p)));
-                    const grades = remaining.filter(p => /^(O|A\+?|B\+?|C|U|RA|F|AB)$/i.test(p));
-                    
-                    extractedRows.push({
-                      "Register Number": reg,
-                      "Subject Code": sub,
-                      "Internal Mark": marks[0] || '',
-                      "External Mark": marks[1] || '',
-                      "Total Mark": marks[2] || '',
-                      "Grade": grades[0] || ''
-                    });
-                  }
-                }
-              });
-              
-              if (extractedRows.length === 0) {
-                // Try split segments fallback
-                lines.forEach(line => {
-                  const parts = line.split(/\s+/).filter(Boolean);
-                  if (parts.length >= 3) {
-                    extractedRows.push({
-                      "Register Number": parts[0],
-                      "Subject Code": parts[1],
-                      "Internal Mark": parts[2],
-                      "External Mark": parts[3] || '',
-                      "Grade": parts[4] || ''
-                    });
-                  }
-                });
-              }
-
-              setParsedRecords(performSmartMatchAndValidation(extractedRows));
-              setUploadProgress(100);
-              setProcessing(false);
-            } catch (ocrErr) {
-              console.error(ocrErr);
-              setError("OCR Extraction failed. Make sure the text is clearly readable.");
-              setProcessing(false);
-            }
-          };
-          reader.readAsDataURL(file);
-          return;
+          throw new Error("Could not extract clean text from PDF directly. If this is a scanned document, please convert to image/Excel.");
         }
       } else {
-        throw new Error('Unsupported file extension. Please upload CSV, Excel, Word, or Image files.');
+        throw new Error('Unsupported file extension. Please upload CSV, Excel, Word, or PDF files.');
       }
 
-      const formatted = performSmartMatchAndValidation(rawRows);
+      // Filter out truly empty rows
+      rawRows = rawRows.filter(row => Object.values(row).some(v => v !== '' && v !== null && v !== undefined));
+
+      const formatted = performSmartMatchAndValidation(rawRows, targetDeptId, selectedSemester);
       setParsedRecords(formatted);
       setUploadProgress(100);
     } catch (err) {
@@ -457,8 +422,8 @@ const MarkImportPage = () => {
     }
   };
 
-  // Revalidate Records
-  const revalidateRecords = (recordsToValidate = parsedRecords) => {
+  // Revalidate Records (after inline edit or delete)
+  const revalidateRecords = (recordsToValidate = parsedRecords, deptId = targetDeptId, semId = selectedSemester) => {
     const studentsMap = new Map(referenceData.students.map(s => [s.registerNumber.toUpperCase(), s]));
     const subjectsMap = new Map(referenceData.subjects.map(s => [s.code.toUpperCase(), s]));
     const existingInDB = new Set(
@@ -466,12 +431,14 @@ const MarkImportPage = () => {
     );
 
     const seenInFile = new Set();
+    const targetDeptIdNum = parseInt(deptId);
+    const targetSemNum = parseInt(semId);
 
     const updated = recordsToValidate.map((rec) => {
-      const student = studentsMap.get(rec.registerNumber.toUpperCase());
-      const subject = subjectsMap.get(rec.subjectCode.toUpperCase());
+      const student = studentsMap.get(rec.registerNumber?.toUpperCase() || '');
+      const subject = subjectsMap.get(rec.subjectCode?.toUpperCase() || '');
       
-      const recordKey = `${rec.registerNumber.toUpperCase()}-${rec.subjectCode.toUpperCase()}`;
+      const recordKey = `${(rec.registerNumber || '').toUpperCase()}-${(rec.subjectCode || '').toUpperCase()}`;
       const isDuplicate = seenInFile.has(recordKey);
       seenInFile.add(recordKey);
       
@@ -479,9 +446,10 @@ const MarkImportPage = () => {
 
       const record = {
         ...rec,
-        studentName: student ? student.name : 'Unknown Student',
-        departmentName: student ? (student.departmentName || 'N/A') : 'N/A',
-        subjectName: subject ? subject.name : 'Unknown Subject',
+        studentName: student ? student.name : (rec.studentName || 'Unknown Student'),
+        // Preserve CSV departmentName if present, then try DB, then keep existing
+        departmentName: rec.departmentName || (student ? (student.departmentName || 'N/A') : 'N/A'),
+        subjectName: subject ? subject.name : (rec.subjectName || 'Unknown Subject'),
         isValid: true,
         errors: [],
         isDuplicate,
@@ -493,7 +461,10 @@ const MarkImportPage = () => {
         record.errors.push('Register Number is missing');
       } else if (!student) {
         record.isValid = false;
-        record.errors.push('Student not found in your assigned roster');
+        record.errors.push('Student not found in database');
+      } else if (!isNaN(targetDeptIdNum) && student.departmentId !== targetDeptIdNum) {
+        record.isValid = false;
+        record.errors.push(`Student is from "${student.departmentName || 'dept ' + student.departmentId}", not the selected department`);
       }
 
       if (!rec.subjectCode) {
@@ -501,24 +472,33 @@ const MarkImportPage = () => {
         record.errors.push('Subject Code is missing');
       } else if (!subject) {
         record.isValid = false;
-        record.errors.push('Subject Code is invalid or unassigned');
+        record.errors.push('Subject Code is invalid or not found');
+      } else {
+        if (!isNaN(targetSemNum) && subject.semester !== targetSemNum) {
+          record.isValid = false;
+          record.errors.push(`Subject "${rec.subjectCode}" is in Semester ${subject.semester} — please select Semester ${subject.semester}`);
+        }
+        if (!isNaN(targetDeptIdNum) && subject.departmentId !== targetDeptIdNum) {
+          record.isValid = false;
+          record.errors.push(`Subject "${rec.subjectCode}" belongs to a different department`);
+        }
       }
 
-      if (rec.internalMarks !== '' && rec.internalMarks !== null) {
+      if (rec.internalMarks !== '' && rec.internalMarks !== null && rec.internalMarks !== undefined) {
         const val = parseFloat(rec.internalMarks);
         if (isNaN(val) || val < 0 || val > 100) {
           record.isValid = false;
           record.errors.push('Internal marks must be between 0 and 100');
         }
       }
-      if (rec.externalMarks !== '' && rec.externalMarks !== null) {
+      if (rec.externalMarks !== '' && rec.externalMarks !== null && rec.externalMarks !== undefined) {
         const val = parseFloat(rec.externalMarks);
         if (isNaN(val) || val < 0 || val > 100) {
           record.isValid = false;
           record.errors.push('External marks must be between 0 and 100');
         }
       }
-      if (rec.totalMarks !== '' && rec.totalMarks !== null) {
+      if (rec.totalMarks !== '' && rec.totalMarks !== null && rec.totalMarks !== undefined) {
         const val = parseFloat(rec.totalMarks);
         if (isNaN(val) || val < 0 || val > 200) {
           record.isValid = false;
@@ -528,9 +508,9 @@ const MarkImportPage = () => {
 
       if (rec.grade) {
         const validGrades = ['O', 'A+', 'A', 'B+', 'B', 'C', 'U', 'RA', 'F', 'AB'];
-        if (!validGrades.includes(rec.grade.trim().toUpperCase())) {
+        if (!validGrades.includes(rec.grade.toString().trim().toUpperCase())) {
           record.isValid = false;
-          record.errors.push('Grade must be O, A+, A, B+, B, C, U, RA, F, or AB');
+          record.errors.push(`Grade "${rec.grade}" is invalid — valid: O, A+, A, B+, B, C, U, RA, F, AB`);
         }
       }
 
@@ -540,81 +520,36 @@ const MarkImportPage = () => {
     setParsedRecords(updated);
   };
 
-  // Inline Edits
-  const startEdit = (index, rec) => {
+  // Save parsed changes inline
+  const startEdit = (index, record) => {
     setEditingIndex(index);
-    setEditValues({
-      registerNumber: rec.registerNumber,
-      subjectCode: rec.subjectCode,
-      internalMarks: rec.internalMarks,
-      externalMarks: rec.externalMarks,
-      totalMarks: rec.totalMarks,
-      percentage: rec.percentage,
-      grade: rec.grade,
-      resultStatus: rec.resultStatus
-    });
+    setEditValues({ ...record });
   };
 
   const saveEdit = (index) => {
     const updated = [...parsedRecords];
-    updated[index] = {
-      ...updated[index],
-      ...editValues
-    };
+    updated[index] = { ...editValues };
     setEditingIndex(-1);
-    revalidateRecords(updated);
+    revalidateRecords(updated, targetDeptId, selectedSemester);
   };
 
   const deleteRow = (index) => {
     const updated = parsedRecords.filter((_, idx) => idx !== index);
-    setParsedRecords(updated);
+    revalidateRecords(updated, targetDeptId, selectedSemester);
   };
 
-  // CSV Error Report Download
-  const downloadErrorReport = () => {
-    const invalidRecords = parsedRecords.filter(r => !r.isValid);
-    if (invalidRecords.length === 0) return;
-
-    const headers = ['Register Number', 'Student Name', 'Subject Code', 'Subject Name', 'Internal Marks', 'External Marks', 'Total Marks', 'Grade', 'Percentage', 'Result Status', 'Errors'];
-    const rows = invalidRecords.map(r => [
-      r.registerNumber,
-      r.studentName,
-      r.subjectCode,
-      r.subjectName,
-      r.internalMarks ?? '',
-      r.externalMarks ?? '',
-      r.totalMarks ?? '',
-      r.grade ?? '',
-      r.percentage ?? '',
-      r.resultStatus ?? '',
-      r.errors.join('; ')
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map(row => row.map(val => `"${val.toString().replace(/"/g, '""')}"`).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `error_report_${fileName || 'marks'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Normalize resultStatus to backend enum values
+  const normalizeStatus = (s) => {
+    if (!s) return '';
+    const upper = s.toString().toUpperCase().trim();
+    if (['PASS', 'PASSED', 'P'].includes(upper)) return 'PASS';
+    if (['ARREAR', 'FAIL', 'FAILED', 'F', 'RA'].includes(upper)) return 'ARREAR';
+    if (['WITHHELD', 'HELD', 'WH'].includes(upper)) return 'WITHHELD';
+    return upper;
   };
 
-  // Bulk Import Submit
+  // Submit parsed draft records to the database
   const handleImport = async () => {
-    if (marksScope === 'Others' && !customAssessmentName.trim()) {
-      setValidationError('Custom Assessment Name is required when "Others" is selected.');
-      setError('Please resolve metadata validation errors before importing.');
-      return;
-    }
-
-    const validRows = parsedRecords.filter(r => r.isValid);
-    if (validRows.length === 0) {
-      setError('There are no valid records to import.');
-      return;
-    }
-
     setImporting(true);
     setError('');
     setSuccess('');
@@ -627,9 +562,6 @@ const MarkImportPage = () => {
           fileName,
           importType,
           assessmentType,
-          customAssessmentName,
-          description,
-          comments,
           records: parsedRecords.map(r => ({
             registerNumber: r.registerNumber,
             subjectCode: r.subjectCode,
@@ -637,8 +569,8 @@ const MarkImportPage = () => {
             externalMarks: r.externalMarks,
             totalMarks: r.totalMarks,
             percentage: r.percentage,
-            grade: r.grade,
-            resultStatus: r.resultStatus,
+            grade: r.grade ? r.grade.toString().toUpperCase().trim() : '',
+            resultStatus: normalizeStatus(r.resultStatus),
             action: r.isValid ? 'UPDATE' : 'SKIP'
           }))
         })
@@ -646,31 +578,50 @@ const MarkImportPage = () => {
 
       const result = await response.json();
       if (response.ok) {
-        setSuccess(`Marks imported successfully! Imported: ${result.recordsImported}, Failed: ${result.failedRecords}`);
+        setSuccess(`Semester results uploaded as DRAFT! Imported: ${result.recordsImported}, Skipped: ${result.failedRecords}. Go to 'Publish Results' to make them visible to students.`);
         setParsedRecords([]);
         setFileName('');
-        setCustomAssessmentName('');
-        loadData();
+        loadData(); // Refresh history logs
       } else {
-        setError(result.error || 'Failed to import marks.');
+        setError(result.error || 'Failed to upload semester results.');
       }
     } catch (err) {
       console.error(err);
-      setError('An error occurred during bulk import.');
+      setError('A network error occurred. Please try again.');
     } finally {
       setImporting(false);
     }
   };
 
-  // Advanced Stats Calculation
+  // Download Error CSV Report
+  const downloadErrorReport = () => {
+    const invalidRows = parsedRecords.filter(r => !r.isValid);
+    if (invalidRows.length === 0) return;
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Row Number,Register Number,Subject Code,Internal,External,Total,Grade,Errors\n";
+
+    invalidRows.forEach((r, idx) => {
+      const errorsStr = `"${r.errors.join('; ')}"`;
+      csvContent += `${idx + 1},${r.registerNumber || ''},${r.subjectCode || ''},${r.internalMarks || ''},${r.externalMarks || ''},${r.totalMarks || ''},${r.grade || ''},${errorsStr}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `semester_import_errors_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalCount = parsedRecords.length;
   const validCount = parsedRecords.filter(r => r.isValid).length;
-  const invalidCount = totalCount - validCount;
+  const invalidCount = parsedRecords.filter(r => !r.isValid).length;
   const duplicateCount = parsedRecords.filter(r => r.isDuplicate).length;
-  const missingRegCount = parsedRecords.filter(r => !r.registerNumber).length;
-  const missingSubCount = parsedRecords.filter(r => !r.subjectCode).length;
   const updateCount = parsedRecords.filter(r => r.isValid && r.isUpdate).length;
 
+  // ── History Detail View ───────────────────────────────────────────────────────
   if (selectedHistoryLog) {
     let details = [];
     try {
@@ -684,7 +635,6 @@ const MarkImportPage = () => {
     const isFailedRecord = (r) => {
       if (r.importStatus === 'FAILED') return true;
       if (r.importStatus === 'SUCCESS' || r.importStatus === 'SKIPPED') return false;
-      // Legacy fallback
       return selectedHistoryLog.status === 'FAILED';
     };
 
@@ -698,7 +648,6 @@ const MarkImportPage = () => {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
-        {/* Back Navigation Button */}
         <div>
           <button 
             className="btn btn-secondary" 
@@ -717,35 +666,24 @@ const MarkImportPage = () => {
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-              e.currentTarget.style.transform = 'translateX(-2px)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-              e.currentTarget.style.transform = 'translateX(0)';
-            }}
           >
             ← Back to Upload Logs
           </button>
         </div>
 
-        {/* Detailed Page Content */}
         <div className="glass-card">
           <h2 style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileSpreadsheet size={24} style={{ color: 'var(--primary)' }} /> Session Upload Details
+            <FileSpreadsheet size={24} style={{ color: 'var(--primary)' }} /> Semester Upload Details
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
-            Detailed records of marks imported from file <strong>{selectedHistoryLog.fileName}</strong> on {new Date(selectedHistoryLog.uploadTime).toLocaleString()}.
+            Detailed records imported from <strong>{selectedHistoryLog.fileName}</strong> on {new Date(selectedHistoryLog.uploadTime).toLocaleString()}.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px', background: 'rgba(255,255,255,0.01)', padding: '20px', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <div>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Assessment Target</span>
               <div style={{ fontWeight: '600', fontSize: '15px', marginTop: '4px', color: 'var(--primary)' }}>
-                {selectedHistoryLog.assessmentType === 'Others' || selectedHistoryLog.customAssessmentName 
-                  ? selectedHistoryLog.customAssessmentName 
-                  : selectedHistoryLog.assessmentType || 'Semester Examination'}
+                Semester Examination Results (Draft)
               </div>
             </div>
             <div>
@@ -766,63 +704,37 @@ const MarkImportPage = () => {
                 {selectedHistoryLog.recordsImported} Success Rows
               </div>
               <div style={{ fontWeight: '600', color: selectedHistoryLog.failedRecords > 0 ? 'var(--danger)' : 'var(--text-secondary)' }}>
-                {selectedHistoryLog.failedRecords} Failed Rows
+                {selectedHistoryLog.failedRecords} Failed / Skipped Rows
               </div>
             </div>
-          </div>          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
             <h3 style={{ margin: 0 }}>Uploaded Data Records</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  background: filterDetailsType === 'all' ? 'var(--primary)' : 'rgba(255,255,255,0.02)',
-                  color: filterDetailsType === 'all' ? '#fff' : 'var(--text-secondary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setFilterDetailsType('all')}
-              >
-                All ({details.length})
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  background: filterDetailsType === 'success' ? 'var(--success)' : 'rgba(255,255,255,0.02)',
-                  color: filterDetailsType === 'success' ? '#fff' : 'var(--success)',
-                  border: '1px solid rgba(74, 222, 128, 0.2)',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setFilterDetailsType('success')}
-              >
-                Success ({successDetails.length})
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  background: filterDetailsType === 'failed' ? 'var(--danger)' : 'rgba(255,255,255,0.02)',
-                  color: filterDetailsType === 'failed' ? '#fff' : 'var(--danger)',
-                  border: '1px solid rgba(248, 113, 113, 0.2)',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setFilterDetailsType('failed')}
-              >
-                Failed ({failedDetails.length})
-              </button>
+              {['all', 'success', 'failed'].map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  className="btn"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    background: filterDetailsType === type
+                      ? (type === 'success' ? 'var(--success)' : type === 'failed' ? 'var(--danger)' : 'var(--primary)')
+                      : 'rgba(255,255,255,0.02)',
+                    color: filterDetailsType === type ? '#fff'
+                      : (type === 'success' ? 'var(--success)' : type === 'failed' ? 'var(--danger)' : 'var(--text-secondary)'),
+                    border: `1px solid ${type === 'success' ? 'rgba(74,222,128,0.2)' : type === 'failed' ? 'rgba(248,113,113,0.2)' : 'var(--border)'}`,
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setFilterDetailsType(type)}
+                >
+                  {type === 'all' ? `All (${details.length})` : type === 'success' ? `Success (${successDetails.length})` : `Failed / Skipped (${failedDetails.length})`}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -832,7 +744,7 @@ const MarkImportPage = () => {
             </div>
           ) : displayedDetails.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5, border: '1px dashed var(--border)', borderRadius: '6px' }}>
-              No records matching the selected filter ({filterDetailsType}) found.
+              No records matching the selected filter found.
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -842,12 +754,12 @@ const MarkImportPage = () => {
                     <th>#</th>
                     <th>Register Number</th>
                     <th>Subject Code</th>
-                    <th>Internal Marks</th>
-                    <th>External Marks</th>
-                    <th>Total Marks</th>
+                    <th>Internal</th>
+                    <th>External</th>
+                    <th>Total</th>
                     <th>Grade</th>
-                    <th>Percentage</th>
-                    <th>Result Status</th>
+                    <th>%</th>
+                    <th>Result</th>
                     <th>Import Status</th>
                   </tr>
                 </thead>
@@ -887,25 +799,10 @@ const MarkImportPage = () => {
                           <span className="badge badge-pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <AlertCircle size={12} /> Skipped
                           </span>
-                        ) : rec.importStatus === 'SUCCESS' ? (
+                        ) : (
                           <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <CheckCircle size={12} /> Success
                           </span>
-                        ) : (
-                          // Fallback for older log entries
-                          selectedHistoryLog.status === 'FAILED' ? (
-                            <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <AlertTriangle size={12} /> Failed
-                            </span>
-                          ) : selectedHistoryLog.status === 'SUCCESS' ? (
-                            <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <CheckCircle size={12} /> Success
-                            </span>
-                          ) : (
-                            <span className="badge badge-pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <AlertCircle size={12} /> Legacy Row
-                            </span>
-                          )
                         )}
                       </td>
                     </tr>
@@ -919,15 +816,40 @@ const MarkImportPage = () => {
     );
   }
 
+  // ── Main Upload View ──────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
       
+      {/* HEADER */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <FileSpreadsheet size={28} style={{ color: 'var(--primary)' }} /> Semester Result Upload
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0', fontSize: '14px' }}>
+            Upload semester examination results in bulk. Results are saved as Draft until published.
+          </p>
+        </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="alert-banner alert-banner-info" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px' }}>
+        <Info size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+        <div>
+          <strong style={{ display: 'block', marginBottom: '4px' }}>Draft Mode Active</strong>
+          <span style={{ fontSize: '13px', lineHeight: '1.5' }}>
+            All semester results uploaded here will be stored as drafts. They will <strong>NOT</strong> be visible to students or reflected in CGPA calculations until you publish them from the <strong>Publish Results</strong> page.
+          </span>
+        </div>
+      </div>
+
       {error && (
-        <div className="alert-banner alert-banner-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertCircle size={20} />
+        <div className="alert-banner alert-banner-danger" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+          <AlertCircle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
           <span>{error}</span>
         </div>
       )}
+
       {success && (
         <div className="alert-banner alert-banner-success" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <CheckCircle size={20} />
@@ -935,123 +857,122 @@ const MarkImportPage = () => {
         </div>
       )}
 
-      {/* Control Panel */}
-      <div className="glass-card">
-        <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <UploadCloud size={24} style={{ color: 'var(--primary)' }} /> Mark Import & Auto Update
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
-          Upload class marksheets in Excel, DOCX, CSV, PDF, or image formats. The system will scan columns dynamically, match student Register Numbers, and update results records transactionally.
-        </p>
-
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '300px' }}>
-            <div className="form-group">
-              <label className="form-label">Marks Target / Scope <span style={{ color: 'var(--danger)' }}>*</span></label>
+      {/* UPLOAD PANEL (Only shown when no file has been parsed yet) */}
+      {parsedRecords.length === 0 && (
+        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            {/* Department Selection */}
+            <div className="form-group" style={{ margin: 0, width: '280px' }}>
+              <label className="form-label">Target Department <span style={{ color: 'var(--danger)' }}>*</span></label>
               <CustomSelect
-                value={marksScope}
-                onChange={(e) => {
-                  setMarksScope(e.target.value);
-                  setValidationError('');
-                  setParsedRecords([]);
-                }}
+                value={targetDeptId}
+                onChange={(e) => setTargetDeptId(e.target.value)}
+                disabled={user.role === 'HOD'}
+                options={departments.map(d => ({ value: d.id.toString(), label: d.name }))}
+              />
+              {user.role === 'HOD' && (
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                  Locked to your department
+                </span>
+              )}
+            </div>
+
+            {/* Semester Selection */}
+            <div className="form-group" style={{ margin: 0, width: '180px' }}>
+              <label className="form-label">Semester <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <CustomSelect
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
                 options={[
-                  { value: 'Internal Assessment 1', label: 'Internal Assessment 1' },
-                  { value: 'Internal Assessment 2', label: 'Internal Assessment 2' },
-                  { value: 'Internal Assessment 3', label: 'Internal Assessment 3' },
-                  { value: 'Model Exam', label: 'Model Exam' },
-                  { value: 'Practical Examination', label: 'Practical Examination' },
-                  { value: 'Assignment', label: 'Assignment' },
-                  { value: 'Quiz', label: 'Quiz' },
-                  { value: 'Lab Assessment', label: 'Lab Assessment' },
-                  { value: 'Viva', label: 'Viva' },
-                  { value: 'Project Review', label: 'Project Review' },
-                  { value: 'Attendance Marks', label: 'Attendance Marks' },
-                  { value: 'Others', label: 'Others' }
+                  { value: '1', label: 'Semester 1' },
+                  { value: '2', label: 'Semester 2' },
+                  { value: '3', label: 'Semester 3' },
+                  { value: '4', label: 'Semester 4' },
+                  { value: '5', label: 'Semester 5' },
+                  { value: '6', label: 'Semester 6' },
+                  { value: '7', label: 'Semester 7' },
+                  { value: '8', label: 'Semester 8' }
                 ]}
               />
             </div>
 
-            <div style={{
-              maxHeight: marksScope === 'Others' ? '120px' : '0',
-              opacity: marksScope === 'Others' ? 1 : 0,
-              overflow: 'hidden',
-              transition: 'all 0.3s ease-in-out',
-              marginBottom: marksScope === 'Others' ? '20px' : '0'
-            }}>
-              <div className="form-group">
-                <label className="form-label">Custom Assessment Name <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="e.g. Demo Test"
-                  value={customAssessmentName}
-                  onChange={(e) => {
-                    setCustomAssessmentName(e.target.value);
-                    if (e.target.value.trim()) setValidationError('');
-                  }}
-                />
-                {validationError && (
-                  <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '4px' }}>
-                    {validationError}
-                  </div>
-                )}
-              </div>
+            {/* Academic Year Selection */}
+            <div className="form-group" style={{ margin: 0, width: '200px' }}>
+              <label className="form-label">Academic Year <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <CustomSelect
+                value={academicYear}
+                onChange={(e) => setAcademicYear(e.target.value)}
+                options={[
+                  { value: '2025-2026', label: '2025-2026' },
+                  { value: '2024-2025', label: '2024-2025' },
+                  { value: '2023-2024', label: '2023-2024' }
+                ]}
+              />
             </div>
           </div>
-        </div>
 
-        {/* Drag Zone */}
-        <div
-          className={`file-drop-zone ${dragActive ? 'active' : ''}`}
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current.click()}
-          style={{
-            border: '2px dashed var(--border)',
-            borderRadius: '8px',
-            padding: '40px 20px',
-            textAlign: 'center',
-            background: dragActive ? 'rgba(99, 102, 241, 0.04)' : 'rgba(255,255,255,0.01)',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            position: 'relative'
-          }}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            onChange={handleFileChange}
-            accept=".csv, .xlsx, .xls, .docx, .pdf, .png, .jpg, .jpeg"
-            style={{ display: 'none' }}
-          />
-          <UploadCloud size={48} style={{ color: 'var(--primary)', opacity: 0.7, marginBottom: '16px' }} />
-          {processing ? (
+          {/* Drag and Drop Dropzone */}
+          <div 
+            className={`dropzone ${dragActive ? 'drag-active' : ''}`}
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              border: '2px dashed var(--border)',
+              borderRadius: '8px',
+              padding: '40px 20px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              background: dragActive ? 'rgba(var(--primary-rgb), 0.05)' : 'rgba(255,255,255,0.01)',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px'
+            }}
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+              accept=".csv, .xlsx, .xls, .docx, .doc, .pdf"
+            />
+            <UploadCloud size={48} style={{ color: 'var(--primary)', opacity: 0.8 }} />
             <div>
-              <p style={{ fontWeight: '500' }}>Extracting data sheet: {uploadProgress}%</p>
-              <div style={{ width: '200px', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', margin: '8px auto', overflow: 'hidden' }}>
-                <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s ease' }}></div>
-              </div>
+              <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                Drag and drop your marksheet file here
+              </span>
+              <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Supports Excel (.xlsx, .xls), CSV (.csv), Word (.docx, .doc) or PDF (.pdf)
+              </span>
             </div>
-          ) : (
-            <div>
-              <p style={{ fontWeight: '500', margin: 0 }}>Drag and drop files here, or click to browse</p>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                Supports Excel, Word, CSV, PDF, and Images (OCR enabled)
-              </p>
+          </div>
+
+          {processing && (
+            <div style={{ marginTop: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
+                <span>Processing &amp; parsing file...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div style={{ width: '100%', height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s ease' }} />
+              </div>
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Preview Grid */}
+      {/* PREVIEW TABLE */}
       {parsedRecords.length > 0 && (
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileSpreadsheet size={20} /> Marksheet Import Preview
+              <FileSpreadsheet size={20} /> Semester Result Import Preview
             </h3>
             
             <div style={{ display: 'flex', gap: '12px' }}>
@@ -1069,6 +990,8 @@ const MarkImportPage = () => {
                 onClick={() => {
                   setParsedRecords([]);
                   setFileName('');
+                  setError('');
+                  setSuccess('');
                 }}
                 style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
@@ -1081,86 +1004,48 @@ const MarkImportPage = () => {
                 style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 {importing ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
-                Confirm Update ({validCount} Valid Rows)
+                Upload Draft ({validCount} Valid Rows)
               </button>
             </div>
           </div>
 
-          {/* Editable Preview Summary Card */}
+          {/* Metadata Card */}
           <div className="glass-card" style={{ background: 'rgba(255,255,255,0.01)', padding: '20px', marginBottom: '24px', border: '1px solid var(--border)' }}>
             <h4 style={{ marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Settings size={18} /> Pre-Import Metadata Verification
             </h4>
-            
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
-              <div className="form-group" style={{ margin: 0, width: '250px' }}>
-                <label className="form-label" style={{ fontSize: '12px' }}>Marks Target / Scope</label>
-                <CustomSelect
-                  value={marksScope}
-                  onChange={(e) => {
-                    setMarksScope(e.target.value);
-                    setValidationError('');
-                  }}
-                  options={[
-                    { value: 'Internal Assessment 1', label: 'Internal Assessment 1' },
-                    { value: 'Internal Assessment 2', label: 'Internal Assessment 2' },
-                    { value: 'Internal Assessment 3', label: 'Internal Assessment 3' },
-                    { value: 'Model Exam', label: 'Model Exam' },
-                    { value: 'Practical Examination', label: 'Practical Examination' },
-                    { value: 'Assignment', label: 'Assignment' },
-                    { value: 'Quiz', label: 'Quiz' },
-                    { value: 'Lab Assessment', label: 'Lab Assessment' },
-                    { value: 'Viva', label: 'Viva' },
-                    { value: 'Project Review', label: 'Project Review' },
-                    { value: 'Attendance Marks', label: 'Attendance Marks' },
-                    { value: 'Others', label: 'Others' }
-                  ]}
-                />
-              </div>
 
-              {marksScope === 'Others' && (
-                <div className="form-group" style={{ margin: 0, width: '250px' }}>
-                  <label className="form-label" style={{ fontSize: '12px' }}>Custom Assessment Name <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={customAssessmentName}
-                    onChange={(e) => {
-                      setCustomAssessmentName(e.target.value);
-                      if (e.target.value.trim()) setValidationError('');
-                    }}
-                  />
-                  {validationError && (
-                    <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '4px' }}>
-                      {validationError}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Detections Summary */}
             <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', fontSize: '13px', border: '1px solid var(--border)' }}>
               <div>
-                <span style={{ color: 'var(--text-secondary)' }}>Detected Subject:</span> <strong style={{ color: 'var(--primary)' }}>{parsedRecords[0]?.subjectName || 'N/A'} ({parsedRecords[0]?.subjectCode || 'N/A'})</strong>
+                <span style={{ color: 'var(--text-secondary)' }}>Target Department:</span>{' '}
+                <strong>{departments.find(d => d.id.toString() === targetDeptId)?.name || (targetDeptId ? `Dept ID ${targetDeptId}` : 'N/A')}</strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-secondary)' }}>Department Scope:</span> <strong>{referenceData?.subjects?.find(s => s.code === parsedRecords[0]?.subjectCode)?.department?.name || user?.department?.name || 'Global'}</strong>
+                <span style={{ color: 'var(--text-secondary)' }}>Target Semester:</span>{' '}
+                <strong>Semester {selectedSemester}</strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-secondary)' }}>Semester:</span> <strong>Semester {referenceData?.subjects?.find(s => s.code === parsedRecords[0]?.subjectCode)?.semester || 'N/A'}</strong>
+                <span style={{ color: 'var(--text-secondary)' }}>Academic Year:</span>{' '}
+                <strong>{academicYear}</strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-secondary)' }}>Total Rows:</span> <strong>{parsedRecords.length} Detected</strong>
+                <span style={{ color: 'var(--text-secondary)' }}>Detected Subjects:</span>{' '}
+                <strong style={{ color: 'var(--primary)' }}>
+                  {[...new Set(parsedRecords.map(r => r.subjectCode).filter(Boolean))].join(', ') || 'N/A'}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-secondary)' }}>Total Rows:</span>{' '}
+                <strong>{parsedRecords.length}</strong>
               </div>
             </div>
           </div>
 
-          {/* Advanced Stats Grid */}
+          {/* Stats Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px', marginBottom: '24px' }}>
             <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
               <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalCount}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Total Rows Found</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Total Rows</div>
             </div>
             <div style={{ padding: '12px', background: 'rgba(74, 222, 128, 0.05)', borderRadius: '6px', border: '1px solid rgba(74, 222, 128, 0.1)', textAlign: 'center' }}>
               <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--success)' }}>{validCount}</div>
@@ -1172,75 +1057,40 @@ const MarkImportPage = () => {
             </div>
             <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.1)', textAlign: 'center' }}>
               <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--warning)' }}>{duplicateCount}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Duplicate Records</div>
-            </div>
-            <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 'bold', color: missingRegCount > 0 ? 'var(--danger)' : '' }}>{missingRegCount}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Missing Register No</div>
-            </div>
-            <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 'bold', color: missingSubCount > 0 ? 'var(--danger)' : '' }}>{missingSubCount}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Missing Subjects</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Duplicates</div>
             </div>
             <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.1)', textAlign: 'center' }}>
               <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--primary)' }}>{updateCount}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Existing to Update</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Will Update</div>
             </div>
           </div>
           
           {/* Preview Filter Buttons */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-            <button
-              type="button"
-              className="btn"
-              style={{
-                padding: '6px 12px',
-                fontSize: '13px',
-                fontWeight: '500',
-                background: previewFilter === 'all' ? 'var(--primary)' : 'rgba(255,255,255,0.02)',
-                color: previewFilter === 'all' ? '#fff' : 'var(--text-secondary)',
-                border: '1px solid var(--border)',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-              onClick={() => setPreviewFilter('all')}
-            >
-              All ({totalCount})
-            </button>
-            <button
-              type="button"
-              className="btn"
-              style={{
-                padding: '6px 12px',
-                fontSize: '13px',
-                fontWeight: '500',
-                background: previewFilter === 'valid' ? 'var(--success)' : 'rgba(255,255,255,0.02)',
-                color: previewFilter === 'valid' ? '#fff' : 'var(--success)',
-                border: '1px solid rgba(74, 222, 128, 0.2)',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-              onClick={() => setPreviewFilter('valid')}
-            >
-              Valid / Success ({validCount})
-            </button>
-            <button
-              type="button"
-              className="btn"
-              style={{
-                padding: '6px 12px',
-                fontSize: '13px',
-                fontWeight: '500',
-                background: previewFilter === 'invalid' ? 'var(--danger)' : 'rgba(255,255,255,0.02)',
-                color: previewFilter === 'invalid' ? '#fff' : 'var(--danger)',
-                border: '1px solid rgba(248, 113, 113, 0.2)',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-              onClick={() => setPreviewFilter('invalid')}
-            >
-              Invalid / Failed ({invalidCount})
-            </button>
+            {[
+              { key: 'all', label: `All (${totalCount})`, color: 'var(--primary)', border: 'var(--border)' },
+              { key: 'valid', label: `Valid (${validCount})`, color: 'var(--success)', border: 'rgba(74,222,128,0.2)' },
+              { key: 'invalid', label: `Invalid (${invalidCount})`, color: 'var(--danger)', border: 'rgba(248,113,113,0.2)' }
+            ].map(({ key, label, color, border }) => (
+              <button
+                key={key}
+                type="button"
+                className="btn"
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  background: previewFilter === key ? color : 'rgba(255,255,255,0.02)',
+                  color: previewFilter === key ? '#fff' : color,
+                  border: `1px solid ${border}`,
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setPreviewFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Table */}
@@ -1258,8 +1108,8 @@ const MarkImportPage = () => {
                   <th>External</th>
                   <th>Total</th>
                   <th>Grade</th>
-                  <th>Percentage</th>
-                  <th>Result Status</th>
+                  <th>%</th>
+                  <th>Result</th>
                   <th>Validation</th>
                   <th style={{ textAlign: 'center' }}>Actions</th>
                 </tr>
@@ -1272,7 +1122,7 @@ const MarkImportPage = () => {
                     if (previewFilter === 'invalid') return !rec.isValid;
                     return true;
                   })
-                  .map((rec, displayIdx) => {
+                  .map((rec) => {
                     const index = rec.originalIndex;
                     const isEditing = editingIndex === index;
                   return (
@@ -1286,7 +1136,7 @@ const MarkImportPage = () => {
                             type="text" 
                             className="form-control" 
                             style={{ padding: '4px 8px', fontSize: '13px' }} 
-                            value={editValues.registerNumber} 
+                            value={editValues.registerNumber || ''} 
                             onChange={(e) => setEditValues({ ...editValues, registerNumber: e.target.value })} 
                           />
                         ) : (
@@ -1311,7 +1161,7 @@ const MarkImportPage = () => {
                             type="text" 
                             className="form-control" 
                             style={{ padding: '4px 8px', fontSize: '13px' }} 
-                            value={editValues.subjectCode} 
+                            value={editValues.subjectCode || ''} 
                             onChange={(e) => setEditValues({ ...editValues, subjectCode: e.target.value })} 
                           />
                         ) : (
@@ -1326,14 +1176,14 @@ const MarkImportPage = () => {
                       <td>
                         {isEditing ? (
                           <input 
-                            type="text" 
+                            type="number" 
                             className="form-control" 
                             style={{ padding: '4px 8px', fontSize: '13px', width: '60px' }} 
                             value={editValues.internalMarks ?? ''} 
                             onChange={(e) => setEditValues({ ...editValues, internalMarks: e.target.value })} 
                           />
                         ) : (
-                          <span>{rec.internalMarks ?? <span style={{ opacity: 0.2 }}>-</span>}</span>
+                          <span>{rec.internalMarks !== '' && rec.internalMarks !== undefined ? rec.internalMarks : <span style={{ opacity: 0.2 }}>-</span>}</span>
                         )}
                       </td>
                       
@@ -1341,29 +1191,29 @@ const MarkImportPage = () => {
                       <td>
                         {isEditing ? (
                           <input 
-                            type="text" 
+                            type="number" 
                             className="form-control" 
                             style={{ padding: '4px 8px', fontSize: '13px', width: '60px' }} 
                             value={editValues.externalMarks ?? ''} 
                             onChange={(e) => setEditValues({ ...editValues, externalMarks: e.target.value })} 
                           />
                         ) : (
-                          <span>{rec.externalMarks ?? <span style={{ opacity: 0.2 }}>-</span>}</span>
+                          <span>{rec.externalMarks !== '' && rec.externalMarks !== undefined ? rec.externalMarks : <span style={{ opacity: 0.2 }}>-</span>}</span>
                         )}
                       </td>
-
+                      
                       {/* Total Marks */}
                       <td>
                         {isEditing ? (
                           <input 
-                            type="text" 
+                            type="number" 
                             className="form-control" 
                             style={{ padding: '4px 8px', fontSize: '13px', width: '60px' }} 
                             value={editValues.totalMarks ?? ''} 
                             onChange={(e) => setEditValues({ ...editValues, totalMarks: e.target.value })} 
                           />
                         ) : (
-                          <span>{rec.totalMarks ?? <span style={{ opacity: 0.2 }}>-</span>}</span>
+                          <span>{rec.totalMarks !== '' && rec.totalMarks !== undefined ? rec.totalMarks : <span style={{ opacity: 0.2 }}>-</span>}</span>
                         )}
                       </td>
 
@@ -1373,12 +1223,13 @@ const MarkImportPage = () => {
                           <input 
                             type="text" 
                             className="form-control" 
-                            style={{ padding: '4px 8px', fontSize: '13px', width: '60px' }} 
+                            style={{ padding: '4px 8px', fontSize: '13px', width: '60px', textTransform: 'uppercase' }} 
                             value={editValues.grade ?? ''} 
-                            onChange={(e) => setEditValues({ ...editValues, grade: e.target.value })} 
+                            placeholder="O/A+/B+"
+                            onChange={(e) => setEditValues({ ...editValues, grade: e.target.value.toUpperCase() })} 
                           />
                         ) : (
-                          <span style={{ fontWeight: 'bold' }}>{rec.grade ?? <span style={{ opacity: 0.2 }}>-</span>}</span>
+                          <span style={{ fontWeight: 'bold' }}>{rec.grade || <span style={{ opacity: 0.2 }}>-</span>}</span>
                         )}
                       </td>
 
@@ -1386,9 +1237,9 @@ const MarkImportPage = () => {
                       <td>
                         {isEditing ? (
                           <input 
-                            type="text" 
+                            type="number" 
                             className="form-control" 
-                            style={{ padding: '4px 8px', fontSize: '13px', width: '60px' }} 
+                            style={{ padding: '4px 8px', fontSize: '13px', width: '65px' }} 
                             value={editValues.percentage ?? ''} 
                             onChange={(e) => setEditValues({ ...editValues, percentage: e.target.value })} 
                           />
@@ -1400,19 +1251,22 @@ const MarkImportPage = () => {
                       {/* Result Status */}
                       <td>
                         {isEditing ? (
-                          <input 
-                            type="text" 
-                            className="form-control" 
-                            style={{ padding: '4px 8px', fontSize: '13px', width: '80px' }} 
-                            placeholder="PASS/ARREAR"
-                            value={editValues.resultStatus ?? ''} 
-                            onChange={(e) => setEditValues({ ...editValues, resultStatus: e.target.value })} 
-                          />
+                          <select
+                            className="form-control"
+                            style={{ padding: '4px 8px', fontSize: '13px', width: '90px' }}
+                            value={normalizeStatus(editValues.resultStatus)}
+                            onChange={(e) => setEditValues({ ...editValues, resultStatus: e.target.value })}
+                          >
+                            <option value="">--</option>
+                            <option value="PASS">PASS</option>
+                            <option value="ARREAR">ARREAR</option>
+                            <option value="WITHHELD">WITHHELD</option>
+                          </select>
                         ) : (
                           <span>
                             {rec.resultStatus ? (
-                              <span className={`badge ${rec.resultStatus.toUpperCase() === 'PASS' ? 'badge-success' : 'badge-danger'}`}>
-                                {rec.resultStatus}
+                              <span className={`badge ${normalizeStatus(rec.resultStatus) === 'PASS' ? 'badge-success' : 'badge-danger'}`}>
+                                {normalizeStatus(rec.resultStatus)}
                               </span>
                             ) : (
                               <span style={{ opacity: 0.2 }}>-</span>
@@ -1434,12 +1288,12 @@ const MarkImportPage = () => {
                         )}
                         {rec.isDuplicate && (
                           <span className="badge badge-pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '4px' }}>
-                            Duplicate Row
+                            Duplicate
                           </span>
                         )}
                         {!rec.isValid && (
-                          <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '4px', maxWidth: '200px' }}>
-                            {rec.errors.join('; ')}
+                          <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '4px', maxWidth: '220px' }}>
+                            {rec.errors.map((e, i) => <div key={i}>• {e}</div>)}
                           </div>
                         )}
                       </td>
@@ -1496,70 +1350,42 @@ const MarkImportPage = () => {
       {/* History logs */}
       <div className="glass-card">
         <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Calendar size={20} /> Upload History Logs
+          <Calendar size={20} /> Upload History Logs (Semester Exams)
         </h3>
         
         {loadingRef ? (
-          <div>Loading logs...</div>
+          <div style={{ padding: '20px', textAlign: 'center', opacity: 0.5 }}>Loading logs...</div>
         ) : history.length === 0 ? (
           <div style={{ padding: '20px', textAlign: 'center', opacity: 0.5 }}>
-            No upload history found.
+            No semester results upload history found.
           </div>
         ) : (
           <div>
-            {/* History Filter Buttons */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  background: historyFilter === 'all' ? 'var(--primary)' : 'rgba(255,255,255,0.02)',
-                  color: historyFilter === 'all' ? '#fff' : 'var(--text-secondary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setHistoryFilter('all')}
-              >
-                All ({history.length})
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  background: historyFilter === 'success' ? 'var(--success)' : 'rgba(255,255,255,0.02)',
-                  color: historyFilter === 'success' ? '#fff' : 'var(--success)',
-                  border: '1px solid rgba(74, 222, 128, 0.2)',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setHistoryFilter('success')}
-              >
-                Success ({history.filter(log => log.status === 'SUCCESS').length})
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  background: historyFilter === 'failed' ? 'var(--danger)' : 'rgba(255,255,255,0.02)',
-                  color: historyFilter === 'failed' ? '#fff' : 'var(--danger)',
-                  border: '1px solid rgba(248, 113, 113, 0.2)',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setHistoryFilter('failed')}
-              >
-                Failed / Warning ({history.filter(log => log.status === 'FAILED' || log.status === 'WARNING').length})
-              </button>
+              {[
+                { key: 'all', label: `All (${history.length})`, color: 'var(--primary)', border: 'var(--border)' },
+                { key: 'success', label: `Success (${history.filter(l => l.status === 'SUCCESS').length})`, color: 'var(--success)', border: 'rgba(74,222,128,0.2)' },
+                { key: 'failed', label: `Failed (${history.filter(l => l.status === 'FAILED' || l.status === 'WARNING').length})`, color: 'var(--danger)', border: 'rgba(248,113,113,0.2)' }
+              ].map(({ key, label, color, border }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className="btn"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    background: historyFilter === key ? color : 'rgba(255,255,255,0.02)',
+                    color: historyFilter === key ? '#fff' : color,
+                    border: `1px solid ${border}`,
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setHistoryFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
             <div style={{ overflowX: 'auto' }}>
@@ -1571,8 +1397,8 @@ const MarkImportPage = () => {
                     <th>Uploaded By</th>
                     <th>Department</th>
                     <th>Upload Time</th>
-                    <th>Imported Records</th>
-                    <th>Failed Records</th>
+                    <th>Imported</th>
+                    <th>Failed / Skipped</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -1589,11 +1415,7 @@ const MarkImportPage = () => {
                         setFilterDetailsType(log.failedRecords > 0 ? 'failed' : 'all');
                       }} style={{ cursor: 'pointer' }} title="Click to view details">
                         <td style={{ fontWeight: '500', color: 'var(--primary)' }}>{log.fileName}</td>
-                        <td style={{ fontWeight: '500' }}>
-                          {log.assessmentType === 'Others' || log.customAssessmentName 
-                            ? log.customAssessmentName 
-                            : log.assessmentType || 'Semester Examination'}
-                        </td>
+                        <td style={{ fontWeight: '500' }}>Semester Examination Results</td>
                         <td>{log.uploadedBy?.name}</td>
                         <td>{log.department?.name || 'Global'}</td>
                         <td>{new Date(log.uploadTime).toLocaleString()}</td>
@@ -1617,10 +1439,8 @@ const MarkImportPage = () => {
         )}
       </div>
 
-
-
     </div>
   );
 };
 
-export default MarkImportPage;
+export default SemesterResultUploadPage;

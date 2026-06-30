@@ -29,12 +29,7 @@ public class ResultPublishService {
     @Transactional
     public void publishSemesterResults(Integer departmentId, Integer semester) {
         // Find all student results for this department and semester
-        List<SemesterResult> results = resultRepository.findAll(); // Simple JPA fetch. For scoping:
-        List<SemesterResult> targetResults = results.stream()
-                .filter(r -> r.getSemester().equals(semester) && 
-                             r.getStudent().getDepartment() != null && 
-                             r.getStudent().getDepartment().getId().equals(departmentId))
-                .toList();
+        List<SemesterResult> targetResults = resultRepository.findByDepartmentAndSemester(departmentId, semester);
 
         if (targetResults.isEmpty()) {
             throw new IllegalArgumentException("No results found to publish for department ID " + departmentId + " and semester " + semester);
@@ -55,5 +50,9 @@ public class ResultPublishService {
         for (Integer studentId : studentIds) {
             cgpaCalculationService.recalculateAndSaveGpa(studentId, semester);
         }
+    }
+
+    public long getDraftCount(Integer departmentId, Integer semester) {
+        return resultRepository.countByDepartmentAndSemesterAndPublished(departmentId, semester, false);
     }
 }

@@ -4,6 +4,7 @@ import com.academicportal.entity.*;
 import com.academicportal.repository.DepartmentRepository;
 import com.academicportal.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -19,13 +20,16 @@ public class AdminUserController {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public AdminUserController(UserRepository userRepository,
                                DepartmentRepository departmentRepository,
-                               PasswordEncoder passwordEncoder) {
+                               PasswordEncoder passwordEncoder,
+                               SimpMessagingTemplate messagingTemplate) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @GetMapping
@@ -41,8 +45,8 @@ public class AdminUserController {
             String phone = (String) payload.get("phone");
             String password = (String) payload.get("password");
             String roleStr = (String) payload.get("role");
-            Integer departmentId = (Integer) payload.get("departmentId");
-            Integer year = (Integer) payload.get("year");
+            Integer departmentId = com.academicportal.util.TypeParser.parseInt(payload.get("departmentId"));
+            Integer year = com.academicportal.util.TypeParser.parseInt(payload.get("year"));
             String registerNumber = (String) payload.get("registerNumber");
             String staffIdCode = (String) payload.get("staffIdCode");
 
@@ -62,6 +66,8 @@ public class AdminUserController {
             user.setYear(year);
             user.setRegisterNumber(registerNumber);
             user.setStaffIdCode(staffIdCode);
+            if (payload.containsKey("designation")) user.setDesignation((String) payload.get("designation"));
+            if (payload.containsKey("section")) user.setSection((String) payload.get("section"));
             user.setIsActive(true);
             user.setCreatedAt(LocalDateTime.now());
 
@@ -86,23 +92,42 @@ public class AdminUserController {
             }
             if (payload.containsKey("role")) user.setRole(Role.valueOf(payload.get("role").toString().toUpperCase()));
             
+            boolean deptChanged = false;
+            Department newDept = null;
             if (payload.containsKey("departmentId")) {
-                Integer departmentId = (Integer) payload.get("departmentId");
+                Integer departmentId = com.academicportal.util.TypeParser.parseInt(payload.get("departmentId"));
                 if (departmentId != null) {
-                    Department dept = departmentRepository.findById(departmentId)
+                    newDept = departmentRepository.findById(departmentId)
                             .orElseThrow(() -> new IllegalArgumentException("Department not found"));
-                    user.setDepartment(dept);
+                    if (user.getDepartment() == null || !user.getDepartment().getId().equals(newDept.getId())) {
+                        user.setDepartment(newDept);
+                        deptChanged = true;
+                    }
                 } else {
-                    user.setDepartment(null);
+                    if (user.getDepartment() != null) {
+                        user.setDepartment(null);
+                        deptChanged = true;
+                    }
                 }
             }
             
-            if (payload.containsKey("year")) user.setYear((Integer) payload.get("year"));
+            if (payload.containsKey("year")) user.setYear(com.academicportal.util.TypeParser.parseInt(payload.get("year")));
             if (payload.containsKey("registerNumber")) user.setRegisterNumber((String) payload.get("registerNumber"));
             if (payload.containsKey("staffIdCode")) user.setStaffIdCode((String) payload.get("staffIdCode"));
+            if (payload.containsKey("designation")) user.setDesignation((String) payload.get("designation"));
+            if (payload.containsKey("section")) user.setSection((String) payload.get("section"));
             if (payload.containsKey("isActive")) user.setIsActive((Boolean) payload.get("isActive"));
 
             User saved = userRepository.save(user);
+            if (deptChanged && saved.getRole() == Role.STAFF) {
+                messagingTemplate.convertAndSend("/topic/staff-updates", Map.of(
+                    "type", "DEPT_TRANSFER",
+                    "staffId", saved.getId(),
+                    "staffName", saved.getName(),
+                    "newDeptCode", newDept != null ? newDept.getCode() : "N/A",
+                    "newDeptName", newDept != null ? newDept.getName() : "N/A"
+                ));
+            }
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

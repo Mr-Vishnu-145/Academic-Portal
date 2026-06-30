@@ -180,15 +180,19 @@ const StaffDashboard = () => {
 
 // 2. My Students
 const MyStudentsPage = () => {
-  const { authenticatedFetch } = useAuth();
+  const { authenticatedFetch, user } = useAuth();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addModal, setAddModal] = useState(false);
+
+  const [editUser, setEditUser] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [registerNumber, setRegisterNumber] = useState('');
+  const [section, setSection] = useState('');
   const [year, setYear] = useState('2');
   const [password, setPassword] = useState('password');
   const [saving, setSaving] = useState(false);
@@ -208,27 +212,57 @@ const MyStudentsPage = () => {
     fetchStudents();
   }, []);
 
+  const startAdd = () => {
+    setEditUser(null);
+    setName('');
+    setEmail('');
+    setPhone('');
+    setRegisterNumber('');
+    setSection('');
+    setYear('2');
+    setPassword('password');
+    setAddModal(true);
+  };
+
+  const startEdit = (s) => {
+    setEditUser(s);
+    setName(s.name);
+    setEmail(s.email);
+    setPhone(s.phone || '');
+    setRegisterNumber(s.registerNumber || '');
+    setSection(s.section || '');
+    setYear(s.year?.toString() || '2');
+    setPassword('');
+    setAddModal(true);
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError('');
+    const isEdit = !!editUser;
+    const endpoint = isEdit ? `/api/staff/students/${editUser.id}` : '/api/staff/students';
+    const payload = { name, email, phone, year, registerNumber, section };
+    if (password) payload.password = password;
     try {
-      const response = await authenticatedFetch('/api/staff/students', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, phone, password, year, registerNumber })
+      const response = await authenticatedFetch(endpoint, {
+        method: isEdit ? 'PUT' : 'POST',
+        body: JSON.stringify(payload)
       });
       const data = await response.json();
       if (response.ok) {
         setAddModal(false);
+        setEditUser(null);
         setName('');
         setEmail('');
         setPhone('');
         setRegisterNumber('');
+        setSection('');
         setYear('2');
         setPassword('password');
         fetchStudents();
       } else {
-        setError(data.error || 'Failed to add student');
+        setError(data.error || 'Failed to save student');
       }
     } catch (err) {
       console.error(err);
@@ -245,7 +279,7 @@ const MyStudentsPage = () => {
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2>Class Student Roster</h2>
-          <button className="btn btn-primary" onClick={() => setAddModal(true)} style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px' }}>
             <PlusCircle size={18} /> Add Student
           </button>
         </div>
@@ -256,8 +290,9 @@ const MyStudentsPage = () => {
                 <th>Register Number</th>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Phone</th>
+                <th>Year / Section</th>
                 <th>Status</th>
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -266,9 +301,14 @@ const MyStudentsPage = () => {
                   <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
                   <td>{s.name}</td>
                   <td>{s.email}</td>
-                  <td>{s.phone}</td>
+                  <td>Year {s.year}{s.section ? ` - Sec ${s.section}` : ''}</td>
                   <td>
-                    <span className="badge badge-success">Active</span>
+                    <span className={`badge ${s.isActive ? 'badge-success' : 'badge-danger'}`}>{s.isActive ? 'Active' : 'Inactive'}</span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button className="btn btn-secondary" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>Edit</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -280,7 +320,7 @@ const MyStudentsPage = () => {
       {addModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
           <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '20px' }}>Register New Student</h3>
+            <h3 style={{ marginBottom: '20px' }}>{editUser ? 'Edit Student' : 'Register New Student'}</h3>
             {error && (
               <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px' }}>
                 <span>{error}</span>
@@ -288,12 +328,22 @@ const MyStudentsPage = () => {
             )}
             <form onSubmit={handleAdd}>
               <div className="form-group">
+                <label className="form-label">Department</label>
+                <input type="text" className="form-control" value={user?.departmentCode || 'N/A'} readOnly style={{ background: 'rgba(255,255,255,0.04)', cursor: 'default', color: 'var(--text-secondary)' }} />
+              </div>
+              <div className="form-group">
                 <label className="form-label">Full Name</label>
                 <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
-              <div className="form-group">
-                <label className="form-label">Register Number</label>
-                <input type="text" className="form-control" placeholder="REGXXXXXX" value={registerNumber} onChange={(e) => setRegisterNumber(e.target.value)} required />
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div className="form-group" style={{ flexGrow: 1 }}>
+                  <label className="form-label">Register Number</label>
+                  <input type="text" className="form-control" placeholder="REGXXXXXX" value={registerNumber} onChange={(e) => setRegisterNumber(e.target.value)} required />
+                </div>
+                <div className="form-group" style={{ width: '110px' }}>
+                  <label className="form-label">Section</label>
+                  <input type="text" className="form-control" placeholder="A" value={section} onChange={(e) => setSection(e.target.value)} required />
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Email Address</label>
@@ -317,7 +367,7 @@ const MyStudentsPage = () => {
                 />
               </div>
               <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label className="form-label">Default Password</label>
+                <label className="form-label">{editUser ? 'Password (leave blank to keep current)' : 'Default Password'}</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -325,7 +375,7 @@ const MyStudentsPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     style={{ paddingRight: '48px' }}
-                    required
+                    required={!editUser}
                   />
                   <button
                     type="button"
@@ -352,9 +402,9 @@ const MyStudentsPage = () => {
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
-                  {saving ? 'Saving...' : 'Register Student'}
+                  {saving ? 'Saving...' : (editUser ? 'Update Student' : 'Register Student')}
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setError(''); }}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setEditUser(null); setError(''); }}>Cancel</button>
               </div>
             </form>
           </div>

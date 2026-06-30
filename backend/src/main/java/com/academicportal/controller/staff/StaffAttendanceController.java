@@ -28,7 +28,7 @@ public class StaffAttendanceController {
             @AuthenticationPrincipal User staff,
             @RequestBody Map<String, Object> payload) {
         try {
-            Integer subjectId = (Integer) payload.get("subjectId");
+            Integer subjectId = com.academicportal.util.TypeParser.parseInt(payload.get("subjectId"));
             LocalDate date = LocalDate.parse((String) payload.get("classDate"));
             
             // Extract map of studentId -> status

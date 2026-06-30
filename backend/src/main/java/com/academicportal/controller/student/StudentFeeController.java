@@ -38,7 +38,7 @@ public class StudentFeeController {
     @PostMapping("/pay")
     public ResponseEntity<?> payFee(@AuthenticationPrincipal User student, @RequestBody Map<String, Object> payload) {
         try {
-            Integer feeStructureId = (Integer) payload.get("feeStructureId");
+            Integer feeStructureId = com.academicportal.util.TypeParser.parseInt(payload.get("feeStructureId"));
             double amount = Double.parseDouble(payload.get("amount").toString());
             String paymentMode = (String) payload.get("paymentMode");
             String txRef = (String) payload.get("transactionRef");

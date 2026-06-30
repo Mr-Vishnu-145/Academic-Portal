@@ -25,10 +25,10 @@ public class StaffMarksController {
             @AuthenticationPrincipal User staff,
             @RequestBody Map<String, Object> payload) {
         try {
-            Integer studentId = (Integer) payload.get("studentId");
-            Integer subjectId = (Integer) payload.get("subjectId");
+            Integer studentId = com.academicportal.util.TypeParser.parseInt(payload.get("studentId"));
+            Integer subjectId = com.academicportal.util.TypeParser.parseInt(payload.get("subjectId"));
             String assessmentType = (String) payload.get("assessmentType");
-            Integer maxMarks = (Integer) payload.get("maxMarks");
+            Integer maxMarks = com.academicportal.util.TypeParser.parseInt(payload.get("maxMarks"));
             double scoredMarks = Double.parseDouble(payload.get("scoredMarks").toString());
 
             AssessmentRecord mark = marksService.saveInternalMark(

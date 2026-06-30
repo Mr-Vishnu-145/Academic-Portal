@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -83,7 +84,7 @@ public class MarkImportController {
     @GetMapping("/reference-data")
     public ResponseEntity<?> getReferenceData(@AuthenticationPrincipal User user) {
         try {
-            List<User> students = accessScopeService.getAccessibleStudents(user);
+            List<User> students = userRepository.findByRole(Role.STUDENT);
             List<Subject> subjects;
             if (user.getRole() == Role.ADMIN) {
                 subjects = subjectRepository.findAll();
@@ -102,12 +103,16 @@ public class MarkImportController {
             // Expose assessments for mapping
             List<Assessment> assessments = assessmentRepository.findAll();
 
+            List<Integer> studentIds = students.stream().map(User::getId).collect(Collectors.toList());
+            List<SemesterResult> existingResults = studentIds.isEmpty() ? Collections.emptyList() : resultRepository.findByStudentIdIn(studentIds);
+
             Map<String, Object> refData = new HashMap<>();
             refData.put("students", students.stream().map(s -> Map.of(
                     "id", s.getId(),
                     "name", s.getName(),
                     "registerNumber", s.getRegisterNumber() != null ? s.getRegisterNumber() : "",
                     "departmentId", s.getDepartment() != null ? s.getDepartment().getId() : 0,
+                    "departmentName", s.getDepartment() != null ? s.getDepartment().getName() : "N/A",
                     "year", s.getYear() != null ? s.getYear() : 1
             )).collect(Collectors.toList()));
 
@@ -129,6 +134,21 @@ public class MarkImportController {
                     "maxMarks", a.getMaxMarks()
             )).collect(Collectors.toList()));
 
+            refData.put("existingResults", existingResults.stream().map(r -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("studentId", r.getStudent().getId());
+                map.put("studentRegisterNumber", r.getStudent().getRegisterNumber());
+                map.put("subjectId", r.getSubject().getId());
+                map.put("subjectCode", r.getSubject().getCode());
+                map.put("internalMarks", r.getInternalMarks());
+                map.put("externalMarks", r.getExternalMarks());
+                map.put("totalMarks", r.getTotalMarks());
+                map.put("percentage", r.getPercentage());
+                map.put("grade", r.getGrade());
+                map.put("resultStatus", r.getResultStatus() != null ? r.getResultStatus().toString() : "");
+                return map;
+            }).collect(Collectors.toList()));
+
             return ResponseEntity.ok(refData);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -136,12 +156,16 @@ public class MarkImportController {
     }
 
     @PostMapping("/bulk")
-    @Transactional
     public ResponseEntity<?> bulkImport(@AuthenticationPrincipal User user, @RequestBody Map<String, Object> payload) {
         try {
             String fileName = (String) payload.get("fileName");
             String importType = (String) payload.get("importType"); // "INTERNAL" or "SEMESTER"
             List<Map<String, Object>> records = (List<Map<String, Object>>) payload.get("records");
+
+            if ("SEMESTER".equalsIgnoreCase(importType) && user.getRole() == Role.STAFF) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "Staff members are not authorized to upload semester examination results."));
+            }
 
             if (records == null || records.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "No records found to import."));
@@ -149,16 +173,28 @@ public class MarkImportController {
 
             int importedCount = 0;
             int failedCount = 0;
+            String payloadAssessmentType = (String) payload.get("assessmentType");
 
             for (Map<String, Object> rec : records) {
                 try {
                     String regNum = (String) rec.get("registerNumber");
                     String subCode = (String) rec.get("subjectCode");
-                    String assessmentType = (String) rec.get("assessmentType"); // e.g. CAT1, CAT2, MODEL, SEMESTER
+                    String assessmentType = rec.containsKey("assessmentType") && rec.get("assessmentType") != null
+                            ? (String) rec.get("assessmentType")
+                            : payloadAssessmentType;
                     String action = (String) rec.get("action"); // "UPDATE" or "SKIP"
+
+                    if ("SKIP".equalsIgnoreCase(action)) {
+                        failedCount++;
+                        rec.put("importStatus", "SKIPPED");
+                        rec.put("errorMessage", "Invalid record; skipped on import");
+                        continue;
+                    }
 
                     if (regNum == null || subCode == null) {
                         failedCount++;
+                        rec.put("importStatus", "FAILED");
+                        rec.put("errorMessage", "Register Number or Subject Code is missing");
                         continue;
                     }
 
@@ -171,14 +207,13 @@ public class MarkImportController {
                             .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + subCode));
 
                     // Verify scopes
-                    if (user.getRole() == Role.HOD) {
+                    if ("SEMESTER".equalsIgnoreCase(importType) && user.getRole() == Role.HOD) {
                         if (user.getDepartment() == null || !user.getDepartment().getId().equals(student.getDepartment().getId())) {
-                            throw new IllegalArgumentException("HOD scope mismatch for student " + regNum);
+                            throw new IllegalArgumentException("HOD can only upload semester results for their own department.");
                         }
-                    } else if (user.getRole() == Role.STAFF) {
-                        if (user.getDepartment() == null || !user.getDepartment().getId().equals(student.getDepartment().getId())) {
-                            throw new IllegalArgumentException("Staff department mismatch for student " + regNum);
-                        }
+                    }
+
+                    if (user.getRole() == Role.STAFF) {
                         // Check staff subject assignment
                         boolean isAssigned = staffAssignmentRepository.findByStaffId(user.getId()).stream()
                                 .anyMatch(sa -> sa.getSubject().getId().equals(subject.getId()));
@@ -191,6 +226,9 @@ public class MarkImportController {
                         // Extract marks
                         Object internalMarkObj = rec.get("internalMark");
                         if (internalMarkObj == null) {
+                            internalMarkObj = rec.get("internalMarks");
+                        }
+                        if (internalMarkObj == null || internalMarkObj.toString().trim().isEmpty()) {
                             throw new IllegalArgumentException("Internal mark is missing");
                         }
                         double scoredMarks = Double.parseDouble(internalMarkObj.toString());
@@ -221,6 +259,8 @@ public class MarkImportController {
                         Optional<AssessmentRecord> existingRecord = recordRepository.findByAssessmentIdAndStudentId(examAssessment.getId(), student.getId());
                         if (existingRecord.isPresent()) {
                             if ("SKIP".equalsIgnoreCase(action)) {
+                                rec.put("importStatus", "SKIPPED");
+                                rec.put("errorMessage", "Record already exists; skip action requested");
                                 continue; // Skip existing record
                             }
                         }
@@ -234,49 +274,83 @@ public class MarkImportController {
                         record.setGradedAt(LocalDateTime.now());
                         recordRepository.save(record);
                         importedCount++;
+                        rec.put("importStatus", "SUCCESS");
 
                     } else { // SEMESTER results
-                        String grade = (String) rec.get("grade");
-                        if (grade == null || grade.trim().isEmpty()) {
-                            throw new IllegalArgumentException("Grade is missing");
-                        }
-                        grade = grade.trim().toUpperCase();
-
-                        // Determine grade points, status, arrears
-                        BigDecimal gradePoint = getGradePoint(grade);
-                        ResultStatus resultStatus = ("U".equals(grade) || "RA".equals(grade) || "F".equals(grade) || "AB".equals(grade)) 
-                                ? ResultStatus.ARREAR : ResultStatus.PASS;
-                        boolean isArrear = resultStatus == ResultStatus.ARREAR;
-
                         List<SemesterResult> existingResults = resultRepository.findByStudentIdAndSemester(student.getId(), subject.getSemester());
                         Optional<SemesterResult> existingResult = existingResults.stream()
                                 .filter(r -> r.getSubject().getId().equals(subject.getId()))
                                 .findFirst();
 
-                        if (existingResult.isPresent()) {
+                        SemesterResult result = existingResult.orElse(new SemesterResult());
+                        if (result.getId() == null) {
+                            result.setStudent(student);
+                            result.setSemester(subject.getSemester());
+                            result.setSubject(subject);
+                            result.setCredits(subject.getCredits());
+                            result.setPublished(false);
+                            // Set standard defaults for fallback in new record
+                            result.setGrade("U");
+                            result.setGradePoint(BigDecimal.ZERO);
+                            result.setIsArrear(true);
+                            result.setResultStatus(ResultStatus.ARREAR);
+                        } else {
                             if ("SKIP".equalsIgnoreCase(action)) {
+                                rec.put("importStatus", "SKIPPED");
+                                rec.put("errorMessage", "Record already exists; skip action requested");
                                 continue; // Skip existing record
                             }
                         }
 
-                        SemesterResult result = existingResult.orElse(new SemesterResult());
-                        result.setStudent(student);
-                        result.setSemester(subject.getSemester());
-                        result.setSubject(subject);
-                        result.setGrade(grade);
-                        result.setGradePoint(gradePoint);
-                        result.setCredits(subject.getCredits());
-                        result.setIsArrear(isArrear);
-                        result.setResultStatus(resultStatus);
-                        result.setPublished(false); // require explicit publishing later
+                        // Map columns intelligently if present in the payload record
+                        if (rec.containsKey("internalMarks") && rec.get("internalMarks") != null && !rec.get("internalMarks").toString().trim().isEmpty()) {
+                            result.setInternalMarks(new BigDecimal(rec.get("internalMarks").toString()).setScale(2, RoundingMode.HALF_UP));
+                        }
+                        if (rec.containsKey("externalMarks") && rec.get("externalMarks") != null && !rec.get("externalMarks").toString().trim().isEmpty()) {
+                            result.setExternalMarks(new BigDecimal(rec.get("externalMarks").toString()).setScale(2, RoundingMode.HALF_UP));
+                        }
+                        if (rec.containsKey("totalMarks") && rec.get("totalMarks") != null && !rec.get("totalMarks").toString().trim().isEmpty()) {
+                            result.setTotalMarks(new BigDecimal(rec.get("totalMarks").toString()).setScale(2, RoundingMode.HALF_UP));
+                        }
+                        if (rec.containsKey("percentage") && rec.get("percentage") != null && !rec.get("percentage").toString().trim().isEmpty()) {
+                            result.setPercentage(new BigDecimal(rec.get("percentage").toString()).setScale(2, RoundingMode.HALF_UP));
+                        }
+
+                        if (rec.containsKey("grade") && rec.get("grade") != null && !rec.get("grade").toString().trim().isEmpty()) {
+                            String grade = rec.get("grade").toString().trim().toUpperCase();
+                            result.setGrade(grade);
+                            result.setGradePoint(getGradePoint(grade));
+                            
+                            // Dynamic fallback status/arrear based on grade
+                            if (!rec.containsKey("resultStatus") || rec.get("resultStatus") == null || rec.get("resultStatus").toString().trim().isEmpty()) {
+                                ResultStatus rStatus = ("U".equals(grade) || "RA".equals(grade) || "F".equals(grade) || "AB".equals(grade)) 
+                                        ? ResultStatus.ARREAR : ResultStatus.PASS;
+                                result.setResultStatus(rStatus);
+                                result.setIsArrear(rStatus == ResultStatus.ARREAR);
+                            }
+                        }
+
+                        if (rec.containsKey("resultStatus") && rec.get("resultStatus") != null && !rec.get("resultStatus").toString().trim().isEmpty()) {
+                            String statusStr = rec.get("resultStatus").toString().trim().toUpperCase();
+                            try {
+                                ResultStatus rStatus = ResultStatus.valueOf(statusStr);
+                                result.setResultStatus(rStatus);
+                                result.setIsArrear(rStatus == ResultStatus.ARREAR);
+                            } catch (Exception e) {
+                                // Fallback
+                            }
+                        }
 
                         resultRepository.save(result);
                         importedCount++;
+                        rec.put("importStatus", "SUCCESS");
                     }
 
                 } catch (Exception e) {
                     System.err.println("Error importing row: " + e.getMessage());
                     failedCount++;
+                    rec.put("importStatus", "FAILED");
+                    rec.put("errorMessage", e.getMessage());
                 }
             }
 
@@ -288,6 +362,20 @@ public class MarkImportController {
             log.setRecordsImported(importedCount);
             log.setFailedRecords(failedCount);
             log.setStatus(failedCount == 0 ? "SUCCESS" : (importedCount > 0 ? "WARNING" : "FAILED"));
+            
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                log.setImportDetails(mapper.writeValueAsString(records));
+            } catch (Exception ex) {
+                System.err.println("Failed to serialize import details: " + ex.getMessage());
+            }
+
+            if (payload.containsKey("assessmentType") && payload.get("assessmentType") != null) {
+                log.setAssessmentType(payload.get("assessmentType").toString());
+            }
+            if (payload.containsKey("customAssessmentName") && payload.get("customAssessmentName") != null) {
+                log.setCustomAssessmentName(payload.get("customAssessmentName").toString());
+            }
             importLogRepository.save(log);
 
             Map<String, Object> summary = new HashMap<>();

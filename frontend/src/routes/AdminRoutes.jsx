@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Users, Building, CreditCard, ShieldCheck, Settings, PlusCircle, Trash, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Users, Building, CreditCard, ShieldCheck, Settings, PlusCircle, Trash, RefreshCw, Eye, EyeOff, CheckCircle, ShieldAlert } from 'lucide-react';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
 import MarkImportPage from '../pages/MarkImportPage';
+import SemesterResultUploadPage from '../pages/SemesterResultUploadPage';
 import CustomSelect from '../components/common/CustomSelect';
 
 const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
@@ -42,6 +43,12 @@ const AdminLayout = ({ children }) => {
       return {
         title: 'Exam Scheduler',
         subtitle: 'View and override institutional examination tables.'
+      };
+    }
+    if (path.endsWith('/results/upload')) {
+      return {
+        title: 'Semester Result Upload',
+        subtitle: 'Upload semester end exam marksheets in draft status.'
       };
     }
     if (path.endsWith('/results')) {
@@ -243,6 +250,12 @@ const ManageAllUsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [addModal, setAddModal] = useState(false);
   
+  const [editUser, setEditUser] = useState(null);
+  const [isActive, setIsActive] = useState(true);
+  const [designation, setDesignation] = useState('');
+  const [section, setSection] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -280,13 +293,48 @@ const ManageAllUsersPage = () => {
     fetchDepts();
   }, []);
 
-  const handleDeactivate = async (id) => {
-    if (!window.confirm('Are you sure you want to suspend this user?')) return;
+  const startAdd = () => {
+    setEditUser(null);
+    setName('');
+    setEmail('');
+    setPhone('');
+    setPassword('password');
+    setRole('STUDENT');
+    setDeptId(departments[0]?.id?.toString() || '');
+    setYear('1');
+    setRegisterNumber('');
+    setStaffIdCode('');
+    setDesignation('');
+    setSection('');
+    setIsActive(true);
+    setAddModal(true);
+  };
+
+  const startEdit = (u) => {
+    setEditUser(u);
+    setName(u.name);
+    setEmail(u.email);
+    setPhone(u.phone || '');
+    setPassword('');
+    setRole(u.role);
+    setDeptId(u.department?.id?.toString() || '');
+    setYear(u.year?.toString() || '1');
+    setRegisterNumber(u.registerNumber || '');
+    setStaffIdCode(u.staffIdCode || '');
+    setDesignation(u.designation || '');
+    setSection(u.section || '');
+    setIsActive(u.isActive ?? true);
+    setAddModal(true);
+  };
+
+  const confirmDeactivate = async () => {
+    if (!deleteConfirm) return;
     try {
-      const response = await authenticatedFetch(`/api/admin/users/${id}`, {
+      const response = await authenticatedFetch(`/api/admin/users/${deleteConfirm}`, {
         method: 'DELETE'
       });
       if (response.ok) {
+        setDeleteConfirm(null);
         fetchUsers();
       }
     } catch (err) {
@@ -299,34 +347,46 @@ const ManageAllUsersPage = () => {
     setSaving(true);
     setError('');
 
+    const isEdit = !!editUser;
+    const endpoint = isEdit ? `/api/admin/users/${editUser.id}` : '/api/admin/users';
+
     const payload = {
       name,
       email,
       phone,
-      password,
       role,
       departmentId: role !== 'ADMIN' && deptId ? parseInt(deptId) : null,
       year: role === 'STUDENT' ? parseInt(year) : null,
       registerNumber: role === 'STUDENT' ? registerNumber : null,
-      staffIdCode: (role === 'STAFF' || role === 'HOD') ? staffIdCode : null
+      staffIdCode: (role === 'STAFF' || role === 'HOD') ? staffIdCode : null,
+      designation: (role === 'STAFF' || role === 'HOD') ? designation : null,
+      section: role === 'STUDENT' ? section : null,
+      isActive: isActive
     };
 
+    if (password) {
+      payload.password = password;
+    }
+
     try {
-      const response = await authenticatedFetch('/api/admin/users', {
-        method: 'POST',
+      const response = await authenticatedFetch(endpoint, {
+        method: isEdit ? 'PUT' : 'POST',
         body: JSON.stringify(payload)
       });
       const data = await response.json();
       if (response.ok) {
         setAddModal(false);
+        setEditUser(null);
         setName('');
         setEmail('');
         setPhone('');
         setRegisterNumber('');
         setStaffIdCode('');
+        setDesignation('');
+        setSection('');
         fetchUsers();
       } else {
-        setError(data.error || 'Failed to add user');
+        setError(data.error || 'Failed to save user');
       }
     } catch (err) {
       console.error(err);
@@ -343,7 +403,7 @@ const ManageAllUsersPage = () => {
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2>Global User Registry</h2>
-          <button className="btn btn-primary" onClick={() => setAddModal(true)} style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px' }}>
             <PlusCircle size={18} /> Add User
           </button>
         </div>
@@ -359,7 +419,7 @@ const ManageAllUsersPage = () => {
                 <th>Department</th>
                 <th>Details</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -375,7 +435,7 @@ const ManageAllUsersPage = () => {
                   </td>
                   <td>{u.department ? u.department.code : 'N/A'}</td>
                   <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    {u.role === 'STUDENT' ? `Reg: ${u.registerNumber} (Yr ${u.year})` : u.role === 'ADMIN' ? 'System Root' : `Staff: ${u.staffIdCode}`}
+                    {u.role === 'STUDENT' ? `Reg: ${u.registerNumber} (Yr ${u.year} Sec ${u.section || 'N/A'})` : u.role === 'ADMIN' ? 'System Root' : `Staff: ${u.staffIdCode} (${u.designation || 'N/A'})`}
                   </td>
                   <td>
                     <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
@@ -383,11 +443,16 @@ const ManageAllUsersPage = () => {
                     </span>
                   </td>
                   <td>
-                    {u.isActive && u.role !== 'ADMIN' && (
-                      <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--danger)' }} onClick={() => handleDeactivate(u.id)}>
-                        Suspend
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button className="btn btn-secondary" onClick={() => startEdit(u)} style={{ padding: '4px 8px' }}>
+                        Edit
                       </button>
-                    )}
+                      {u.isActive && u.role !== 'ADMIN' && (
+                        <button className="btn btn-secondary" style={{ padding: '4px 8px', color: 'var(--danger)' }} onClick={() => setDeleteConfirm(u.id)}>
+                          Suspend
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -397,9 +462,9 @@ const ManageAllUsersPage = () => {
       </div>
 
       {addModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
           <div className="glass-card" style={{ width: '450px', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '20px' }}>Register New User</h3>
+            <h3 style={{ marginBottom: '20px' }}>{editUser ? 'Update User Registry' : 'Register New User'}</h3>
             {error && (
               <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', color: '#f87171' }}>
                 <span>{error}</span>
@@ -418,19 +483,22 @@ const ManageAllUsersPage = () => {
                 <label className="form-label">Phone Number</label>
                 <input type="text" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
-              <div className="form-group">
-                <label className="form-label">Role</label>
-                <CustomSelect
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  options={[
-                    { value: 'STUDENT', label: 'Student' },
-                    { value: 'STAFF', label: 'Staff' },
-                    { value: 'HOD', label: 'Head of Department (HOD)' },
-                    { value: 'ADMIN', label: 'Administrator' }
-                  ]}
-                />
-              </div>
+              
+              {!editUser && (
+                <div className="form-group">
+                  <label className="form-label">Role</label>
+                  <CustomSelect
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    options={[
+                      { value: 'STUDENT', label: 'Student' },
+                      { value: 'STAFF', label: 'Staff' },
+                      { value: 'HOD', label: 'Head of Department (HOD)' },
+                      { value: 'ADMIN', label: 'Administrator' }
+                    ]}
+                  />
+                </div>
+              )}
 
               {role !== 'ADMIN' && (
                 <div className="form-group">
@@ -458,22 +526,34 @@ const ManageAllUsersPage = () => {
                       ]}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Register Number</label>
-                    <input type="text" className="form-control" placeholder="REGXXXXXX" value={registerNumber} onChange={(e) => setRegisterNumber(e.target.value)} required />
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div className="form-group" style={{ flexGrow: 1 }}>
+                      <label className="form-label">Register Number</label>
+                      <input type="text" className="form-control" placeholder="REGXXXXXX" value={registerNumber} onChange={(e) => setRegisterNumber(e.target.value)} required />
+                    </div>
+                    <div className="form-group" style={{ width: '120px' }}>
+                      <label className="form-label">Section</label>
+                      <input type="text" className="form-control" placeholder="A" value={section} onChange={(e) => setSection(e.target.value)} required />
+                    </div>
                   </div>
                 </>
               )}
 
               {(role === 'STAFF' || role === 'HOD') && (
-                <div className="form-group">
-                  <label className="form-label">Staff ID / Code</label>
-                  <input type="text" className="form-control" placeholder="STFXXXXXX" value={staffIdCode} onChange={(e) => setStaffIdCode(e.target.value)} required />
-                </div>
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Employee ID / Staff Code</label>
+                    <input type="text" className="form-control" placeholder="STFXXXXXX" value={staffIdCode} onChange={(e) => setStaffIdCode(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Designation</label>
+                    <input type="text" className="form-control" placeholder="Professor" value={designation} onChange={(e) => setDesignation(e.target.value)} required />
+                  </div>
+                </>
               )}
 
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label className="form-label">Default Password</label>
+              <div className="form-group">
+                <label className="form-label">{editUser ? 'Password (leave blank to keep current)' : 'Default Password'}</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -481,7 +561,7 @@ const ManageAllUsersPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     style={{ paddingRight: '48px' }}
-                    required
+                    required={!editUser}
                   />
                   <button
                     type="button"
@@ -506,13 +586,49 @@ const ManageAllUsersPage = () => {
                   </button>
                 </div>
               </div>
+
+              {editUser && (
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                  <label className="form-label">Account Status</label>
+                  <CustomSelect
+                    value={isActive ? 'true' : 'false'}
+                    onChange={(e) => setIsActive(e.target.value === 'true')}
+                    options={[
+                      { value: 'true', label: 'Active' },
+                      { value: 'false', label: 'Suspended / Deactivated' }
+                    ]}
+                  />
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
-                  {saving ? 'Registering...' : 'Register User'}
+                  {saving ? 'Saving...' : (editUser ? 'Update User' : 'Register User')}
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setError(''); }}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setEditUser(null); setError(''); }}>Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 110, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} /> Suspend User Account
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              Are you sure you want to suspend this user? This will disable their portal login and set their status to Suspended.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setDeleteConfirm(null)} style={{ padding: '8px 16px', fontSize: '14px' }}>
+                Cancel
+              </button>
+              <button type="button" className="btn" onClick={confirmDeactivate} style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                Suspend
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -667,7 +783,11 @@ const PublishResultsPage = () => {
   const [depts, setDepts] = useState([]);
   const [deptId, setDeptId] = useState('1');
   const [semester, setSemester] = useState('4');
+  const [academicYear, setAcademicYear] = useState('2025-2026');
   const [publishing, setPublishing] = useState(false);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
+  const [publishStatus, setPublishStatus] = useState({ type: '', message: '' });
 
   useEffect(() => {
     authenticatedFetch('/api/admin/departments')
@@ -680,59 +800,146 @@ const PublishResultsPage = () => {
 
   const handlePublish = async (e) => {
     e.preventDefault();
-    if (!window.confirm('Publish results and recalculate student GPAs?')) return;
-    
+    setPublishStatus({ type: '', message: '' });
+    try {
+      const response = await authenticatedFetch(`/api/admin/results/draft-count?departmentId=${deptId}&semester=${semester}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDraftCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setShowPublishConfirm(true);
+  };
+
+  const doPublish = async () => {
+    setShowPublishConfirm(false);
     setPublishing(true);
     try {
       const response = await authenticatedFetch('/api/admin/results/publish', {
         method: 'POST',
         body: JSON.stringify({
           departmentId: deptId,
-          semester: semester
+          semester: semester,
+          academicYear: academicYear
         })
       });
       const data = await response.json();
       if (response.ok) {
-        alert('Semester results published globally.');
+        setPublishStatus({ type: 'success', message: 'Semester results published globally.' });
       } else {
-        alert(data.error);
+        setPublishStatus({ type: 'error', message: data.error || 'Failed to publish results.' });
       }
     } catch (err) {
       console.error(err);
+      setPublishStatus({ type: 'error', message: 'An error occurred while publishing results.' });
     } finally {
       setPublishing(false);
     }
   };
 
+  const selectedDeptName = depts.find(d => d.id.toString() === deptId)?.name || 'N/A';
+
   return (
-    <div className="glass-card" style={{ maxWidth: '550px' }}>
-      <h2>Global Results Release</h2>
-      <form onSubmit={handlePublish} style={{ marginTop: '24px' }}>
-        <div className="form-group">
-          <label className="form-label">Department</label>
-          <CustomSelect
-            value={deptId}
-            onChange={(e) => setDeptId(e.target.value)}
-            options={depts.map(d => ({ value: d.id, label: d.name }))}
-          />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '550px' }}>
+      {publishStatus.type === 'success' && (
+        <div className="alert-banner alert-banner-success" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '6px' }}>
+          <CheckCircle size={20} style={{ color: 'var(--success)' }} />
+          <span>{publishStatus.message}</span>
         </div>
-        <div className="form-group" style={{ marginBottom: '24px' }}>
-          <label className="form-label">Semester</label>
-          <CustomSelect
-            value={semester}
-            onChange={(e) => setSemester(e.target.value)}
-            options={[
-              { value: '1', label: 'Semester 1' },
-              { value: '2', label: 'Semester 2' },
-              { value: '3', label: 'Semester 3' },
-              { value: '4', label: 'Semester 4' }
-            ]}
-          />
+      )}
+      {publishStatus.type === 'error' && (
+        <div className="alert-banner alert-banner-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171' }}>
+          <ShieldAlert size={20} />
+          <span>{publishStatus.message}</span>
         </div>
-        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={publishing}>
-          {publishing ? 'Publishing...' : 'Release Results'}
-        </button>
-      </form>
+      )}
+
+      <div className="glass-card" style={{ width: '100%' }}>
+        <h2>Global Results Release</h2>
+        <form onSubmit={handlePublish} style={{ marginTop: '24px' }}>
+          <div className="form-group">
+            <label className="form-label">Department</label>
+            <CustomSelect
+              value={deptId}
+              onChange={(e) => setDeptId(e.target.value)}
+              options={depts.map(d => ({ value: d.id.toString(), label: d.name }))}
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <label className="form-label">Academic Year</label>
+            <CustomSelect
+              value={academicYear}
+              onChange={(e) => setAcademicYear(e.target.value)}
+              options={[
+                { value: '2025-2026', label: '2025-2026' },
+                { value: '2024-2025', label: '2024-2025' },
+                { value: '2023-2024', label: '2023-2024' }
+              ]}
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: '24px' }}>
+            <label className="form-label">Semester</label>
+            <CustomSelect
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              options={[
+                { value: '1', label: 'Semester 1' },
+                { value: '2', label: 'Semester 2' },
+                { value: '3', label: 'Semester 3' },
+                { value: '4', label: 'Semester 4' },
+                { value: '5', label: 'Semester 5' },
+                { value: '6', label: 'Semester 6' },
+                { value: '7', label: 'Semester 7' },
+                { value: '8', label: 'Semester 8' }
+              ]}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={publishing}>
+            {publishing ? 'Publishing...' : 'Release Results'}
+          </button>
+        </form>
+      </div>
+
+      {showPublishConfirm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 110, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldAlert size={20} /> Publish Results Confirmation
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', margin: '16px 0 20px 0', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px' }}>
+              <div>
+                <span style={{ color: 'var(--text-secondary)' }}>Department:</span> <strong style={{ color: 'var(--primary)' }}>{selectedDeptName}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-secondary)' }}>Semester:</span> <strong>Semester {semester}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-secondary)' }}>Academic Year:</span> <strong>{academicYear}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-secondary)' }}>Total Student Records:</span> <strong style={{ color: draftCount > 0 ? 'var(--success)' : 'var(--warning)' }}>{draftCount} Draft Records</strong>
+              </div>
+            </div>
+
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              {draftCount > 0 
+                ? 'Published results will immediately become visible to students. Are you sure you want to publish?'
+                : 'Warning: There are no draft results found for this department and semester. Please upload results first.'}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowPublishConfirm(false)} style={{ padding: '8px 16px', fontSize: '14px' }}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={doPublish} disabled={draftCount === 0 || publishing} style={{ padding: '8px 16px', fontSize: '14px' }}>
+                {publishing ? 'Publishing...' : 'Publish Results'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -770,6 +977,7 @@ const AdminRoutes = () => {
         <Route path="fees" element={<FeeManagementPage />} />
         <Route path="import-marks" element={<MarkImportPage />} />
         <Route path="exams" element={<ExamScheduleManager />} />
+        <Route path="results/upload" element={<SemesterResultUploadPage />} />
         <Route path="results" element={<PublishResultsPage />} />
         <Route path="settings" element={<SystemSettingsPage />} />
       </Routes>

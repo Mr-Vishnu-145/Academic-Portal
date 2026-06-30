@@ -55,6 +55,7 @@ public class StaffStudentController {
             }
             
             String registerNumber = (String) payload.get("registerNumber");
+            String section = (String) payload.get("section");
 
             if (userRepository.findByEmail(email).isPresent()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Email already registered"));
@@ -72,8 +73,58 @@ public class StaffStudentController {
             student.setDepartment(staff.getDepartment());
             student.setYear(year);
             student.setRegisterNumber(registerNumber);
+            student.setSection(section);
             student.setIsActive(true);
             student.setCreatedAt(LocalDateTime.now());
+
+            User saved = userRepository.save(student);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PreAuthorize("hasRole('STAFF')")
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateStudent(@AuthenticationPrincipal User staff, @PathVariable Integer id, @RequestBody Map<String, Object> payload) {
+        try {
+            User student = userRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+
+            if (student.getDepartment() == null || !student.getDepartment().getId().equals(staff.getDepartment().getId()) || student.getRole() != Role.STUDENT) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
+            }
+
+            if (payload.containsKey("name")) student.setName((String) payload.get("name"));
+            if (payload.containsKey("email")) {
+                String email = (String) payload.get("email");
+                if (!email.equalsIgnoreCase(student.getEmail()) && userRepository.findByEmail(email).isPresent()) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Email already registered"));
+                }
+                student.setEmail(email);
+            }
+            if (payload.containsKey("phone")) student.setPhone((String) payload.get("phone"));
+            if (payload.containsKey("password") && payload.get("password") != null && !payload.get("password").toString().isEmpty()) {
+                student.setPasswordHash(passwordEncoder.encode((String) payload.get("password")));
+            }
+            if (payload.containsKey("year")) {
+                Object yearObj = payload.get("year");
+                Integer year;
+                if (yearObj instanceof Number) {
+                    year = ((Number) yearObj).intValue();
+                } else {
+                    year = Integer.parseInt(yearObj.toString());
+                }
+                student.setYear(year);
+            }
+            if (payload.containsKey("registerNumber")) {
+                String registerNumber = (String) payload.get("registerNumber");
+                if (registerNumber != null && !registerNumber.equalsIgnoreCase(student.getRegisterNumber()) && userRepository.findByIdentifier(registerNumber).isPresent()) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Register Number already registered"));
+                }
+                student.setRegisterNumber(registerNumber);
+            }
+            if (payload.containsKey("section")) student.setSection((String) payload.get("section"));
 
             User saved = userRepository.save(student);
             return ResponseEntity.ok(saved);

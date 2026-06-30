@@ -38,4 +38,15 @@ public class MarkImportLog {
 
     @Column(nullable = false)
     private String status;
+
+    @Lob
+    @Column(name = "import_details", columnDefinition = "LONGTEXT")
+    private String importDetails;
+
+    @Column(name = "assessment_type")
+    private String assessmentType;
+
+    @Column(name = "custom_assessment_name")
+    private String customAssessmentName;
+
 }

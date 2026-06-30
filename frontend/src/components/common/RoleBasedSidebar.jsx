@@ -67,6 +67,7 @@ const RoleBasedSidebar = ({ sidebarOpen, setSidebarOpen }) => {
       { path: '/hod/staff', label: 'Manage Staff', icon: Briefcase },
       { path: '/hod/import-marks', label: 'Import Marks', icon: FileSpreadsheet },
       { path: '/hod/exams', label: 'Exam Schedule', icon: Calendar },
+      { path: '/hod/results/upload', label: 'Semester Result Upload', icon: FileSpreadsheet },
       { path: '/hod/results', label: 'Publish Results', icon: ShieldCheck },
     ],
     ADMIN: [
@@ -76,6 +77,7 @@ const RoleBasedSidebar = ({ sidebarOpen, setSidebarOpen }) => {
       { path: '/admin/import-marks', label: 'Import Marks', icon: FileSpreadsheet },
       { path: '/admin/exams', label: 'Exam Schedule', icon: Calendar },
       { path: '/admin/fees', label: 'Fee Management', icon: CreditCard },
+      { path: '/admin/results/upload', label: 'Semester Result Upload', icon: FileSpreadsheet },
       { path: '/admin/results', label: 'Publish Results', icon: ShieldCheck },
       { path: '/admin/settings', label: 'System Settings', icon: Settings },
     ]

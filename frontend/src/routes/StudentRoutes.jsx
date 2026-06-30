@@ -414,8 +414,8 @@ const MarksPage = () => {
                 <div className="custom-chart-bar-col" key={sem.id}>
                   <div 
                     className="custom-chart-bar" 
-                    style={{ height: `${(sem.sgpa / 10.0) * 100}%` }}
-                    data-value={sem.sgpa}
+                    style={{ height: `${(Number(sem.sgpa || 0) / 10.0) * 100}%` }}
+                    data-value={typeof sem.sgpa === 'number' ? sem.sgpa.toFixed(2) : (sem.sgpa ? Number(sem.sgpa).toFixed(2) : '0.00')}
                   ></div>
                   <div className="custom-chart-label">Sem {sem.semester}</div>
                 </div>
@@ -425,7 +425,11 @@ const MarksPage = () => {
           
           <div style={{ padding: '32px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.1)', textAlign: 'center', width: '220px' }}>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Overall CGPA</div>
-            <div style={{ fontSize: '64px', fontWeight: '800', color: 'var(--primary)', lineHeight: 1 }}>{gpaData?.overallCgpa}</div>
+            <div style={{ fontSize: '64px', fontWeight: '800', color: 'var(--primary)', lineHeight: 1 }}>
+              {typeof gpaData?.overallCgpa === 'number' 
+                ? gpaData.overallCgpa.toFixed(2) 
+                : (gpaData?.overallCgpa ? Number(gpaData.overallCgpa).toFixed(2) : '0.00')}
+            </div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>Scale: 0.00 - 10.00</div>
           </div>
         </div>
@@ -466,57 +470,184 @@ const MarksPage = () => {
 const ResultPage = () => {
   const { authenticatedFetch } = useAuth();
   const [results, setResults] = useState([]);
+  const [gpaData, setGpaData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authenticatedFetch('/api/student/results')
-      .then(res => res.json())
-      .then(data => {
-        setResults(data);
-        setLoading(false);
-      });
+    Promise.all([
+      authenticatedFetch('/api/student/results').then(res => res.json()),
+      authenticatedFetch('/api/student/marks/gpa').then(res => res.json())
+    ]).then(([resData, gpa]) => {
+      setResults(resData);
+      setGpaData(gpa);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
   }, []);
 
   if (loading) return <div>Loading published results...</div>;
 
-  return (
-    <div className="glass-card">
-      <h2 style={{ marginBottom: '24px' }}>Published Semester Exam Results</h2>
-      {results.length === 0 ? (
-        <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glow)', borderRadius: '8px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-          No published exam results found for current semester.
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="portal-table">
+  // Group results by semester
+  const resultsBySemester = {};
+  results.forEach(r => {
+    const sem = r.semester;
+    if (!resultsBySemester[sem]) {
+      resultsBySemester[sem] = [];
+    }
+    resultsBySemester[sem].push(r);
+  });
+
+  const semestersList = Object.keys(resultsBySemester).sort((a, b) => b - a); // descending order
+
+  const handlePrint = (sem) => {
+    const semResults = resultsBySemester[sem];
+    const semGpaRaw = gpaData?.semesters?.find(s => s.semester === parseInt(sem))?.sgpa;
+    const semGpa = semGpaRaw !== undefined && semGpaRaw !== null ? Number(semGpaRaw).toFixed(2) : '0.00';
+    const cgpaRaw = gpaData?.overallCgpa;
+    const cgpa = cgpaRaw !== undefined && cgpaRaw !== null ? Number(cgpaRaw).toFixed(2) : '0.00';
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Semester ${sem} Marksheet</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .header h1 { margin: 0; font-size: 26px; }
+            .header p { margin: 5px 0 0; color: #666; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+            .info-item { font-size: 14px; }
+            .info-item strong { color: #111; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #f5f5f5; font-weight: 600; }
+            .footer { display: flex; justify-content: space-between; margin-top: 50px; font-size: 14px; border-top: 1px solid #ddd; padding-top: 20px; }
+            .gpa-box { display: flex; gap: 30px; background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px solid #eee; margin-bottom: 30px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ACADEMIC PORTAL</h1>
+            <p>OFFICIAL SEMESTER MARKSHEET</p>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-item"><strong>Student Name:</strong> ${semResults[0]?.studentName || semResults[0]?.student?.name || 'Student'}</div>
+            <div class="info-item"><strong>Register Number:</strong> ${semResults[0]?.studentRegisterNumber || semResults[0]?.student?.registerNumber || '-'}</div>
+            <div class="info-item"><strong>Semester:</strong> Semester ${sem}</div>
+            <div class="info-item"><strong>Department:</strong> ${semResults[0]?.studentDepartmentName || semResults[0]?.student?.department?.name || 'N/A'}</div>
+          </div>
+
+          <table>
             <thead>
               <tr>
                 <th>Subject Code</th>
                 <th>Subject Name</th>
                 <th>Credits</th>
                 <th>Grade</th>
-                <th>Grade Point</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {results.map((r) => (
-                <tr key={r.id}>
-                  <td style={{ fontWeight: '600' }}>{r.subject.code}</td>
-                  <td>{r.subject.name}</td>
-                  <td>{r.credits}</td>
-                  <td style={{ fontWeight: '700', color: 'var(--accent)' }}>{r.grade}</td>
-                  <td>{r.gradePoint}</td>
-                  <td>
-                    <span className={`badge ${r.resultStatus === 'PASS' ? 'badge-success' : 'badge-danger'}`}>
-                      {r.resultStatus}
-                    </span>
-                  </td>
+              ${semResults.map(r => `
+                <tr>
+                  <td><strong>${r.subject?.code || r.subjectCode}</strong></td>
+                  <td>${r.subject?.name || r.subjectName}</td>
+                  <td>${r.credits}</td>
+                  <td style="font-weight: bold;">${r.grade}</td>
+                  <td><span style="color: ${r.resultStatus === 'PASS' ? 'green' : 'red'}; font-weight: 600;">${r.resultStatus}</span></td>
                 </tr>
-              ))}
+              `).join('')}
             </tbody>
           </table>
+
+          <div class="gpa-box">
+            <div>SEMESTER SGPA: <span style="color: #4f46e5;">${semGpa}</span></div>
+            <div>OVERALL CGPA: <span style="color: #4f46e5;">${cgpa}</span></div>
+          </div>
+
+          <div class="footer">
+            <div>Date of Issue: ${new Date().toLocaleDateString()}</div>
+            <div>Controller of Examinations</div>
+          </div>
+
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {semestersList.length === 0 ? (
+        <div className="glass-card" style={{ padding: '40px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glow)', borderRadius: '8px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+          <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>Semester Results</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--warning)' }}>Results Not Published Yet</div>
         </div>
+      ) : (
+        semestersList.map((sem) => {
+          const semResults = resultsBySemester[sem];
+          const semGpa = gpaData?.semesters?.find(s => s.semester === parseInt(sem))?.sgpa || '0.00';
+          const cgpa = gpaData?.overallCgpa || '0.00';
+
+          return (
+            <div className="glass-card" key={sem}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ margin: 0 }}>Semester {sem} Results</h2>
+                  <div style={{ display: 'flex', gap: '16px', marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    <span>SGPA: <strong style={{ color: 'var(--primary)' }}>{semGpa}</strong></span>
+                    <span>CGPA: <strong style={{ color: 'var(--primary)' }}>{cgpa}</strong></span>
+                  </div>
+                </div>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  onClick={() => handlePrint(sem)}
+                >
+                  <Download size={16} /> Download Marksheet
+                </button>
+              </div>
+
+              <div className="table-container">
+                <table className="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Subject Code</th>
+                      <th>Subject Name</th>
+                      <th>Credits</th>
+                      <th>Grade</th>
+                      <th>Grade Point</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {semResults.map((r) => (
+                      <tr key={r.id}>
+                        <td style={{ fontWeight: '600' }}>{r.subject?.code || r.subjectCode}</td>
+                        <td>{r.subject?.name || r.subjectName}</td>
+                        <td>{r.credits}</td>
+                        <td style={{ fontWeight: '700', color: 'var(--accent)' }}>{r.grade}</td>
+                        <td>{r.gradePoint}</td>
+                        <td>
+                          <span className={`badge ${r.resultStatus === 'PASS' ? 'badge-success' : 'badge-danger'}`}>
+                            {r.resultStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })
       )}
     </div>
   );

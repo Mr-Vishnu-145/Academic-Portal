@@ -66,6 +66,7 @@ const ExamScheduleManager = () => {
   const [editHall, setEditHall] = useState('');
   const [editStatus, setEditStatus] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   // Filter states
   const [filterYear, setFilterYear] = useState('ALL');
@@ -277,9 +278,6 @@ const ExamScheduleManager = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to permanently delete this exam schedule?')) {
-      return;
-    }
     setError('');
     setSuccess('');
 
@@ -297,6 +295,8 @@ const ExamScheduleManager = () => {
     } catch (err) {
       console.error(err);
       setError('An error occurred. Please try again.');
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -605,7 +605,7 @@ const ExamScheduleManager = () => {
                             <button 
                               className="btn btn-secondary" 
                               style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              onClick={() => handleDelete(exam.id)}
+                              onClick={() => setDeleteConfirmId(exam.id)}
                             >
                               <Trash2 size={14} /> Delete
                             </button>
@@ -899,6 +899,26 @@ const ExamScheduleManager = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+      {deleteConfirmId && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 110, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldAlert size={20} /> Delete Exam Schedule
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              Are you sure you want to permanently delete this exam schedule? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setDeleteConfirmId(null)} style={{ padding: '8px 16px', fontSize: '14px' }}>
+                Cancel
+              </button>
+              <button type="button" className="btn" onClick={() => handleDelete(deleteConfirmId)} style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

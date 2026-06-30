@@ -27,7 +27,7 @@ public class StaffExamController {
             @AuthenticationPrincipal User staff,
             @RequestBody Map<String, Object> payload) {
         try {
-            Integer subjectId = (Integer) payload.get("subjectId");
+            Integer subjectId = com.academicportal.util.TypeParser.parseInt(payload.get("subjectId"));
             String examType = (String) payload.get("examType");
             LocalDate examDate = LocalDate.parse((String) payload.get("examDate"));
             LocalTime examTime = LocalTime.parse((String) payload.get("examTime"));

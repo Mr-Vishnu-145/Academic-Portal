@@ -51,6 +51,7 @@ CREATE TABLE users (
   section         VARCHAR(10) NULL,      -- only for students: A, B, C etc.
   register_number VARCHAR(20) UNIQUE NULL, -- students only
   staff_id_code   VARCHAR(20) UNIQUE NULL, -- staff/hod only
+  designation     VARCHAR(100) NULL,       -- staff/hod only
   is_active       BOOLEAN DEFAULT TRUE,
   created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (role_id) REFERENCES roles(id),
@@ -120,7 +121,7 @@ CREATE TABLE assessments (
   id              INT PRIMARY KEY AUTO_INCREMENT,
   subject_id      INT NOT NULL,
   type            VARCHAR(20) NOT NULL, -- EXAM, ASSIGNMENT
-  sub_type        VARCHAR(20) NOT NULL, -- CAT1, CAT2, MODEL, SEMESTER, ARREAR, HOMEWORK, etc.
+  sub_type        VARCHAR(50) NOT NULL, -- CAT1, CAT2, MODEL, SEMESTER, ARREAR, HOMEWORK, etc.
   title           VARCHAR(200) NOT NULL,
   description     TEXT,
   due_date        DATE NOT NULL,
@@ -167,6 +168,10 @@ CREATE TABLE semester_results (
   arrear_exam_date DATE NULL,
   arrear_status   VARCHAR(20) NULL,
   cleared_semester INT NULL,
+  internal_marks  DECIMAL(5,2) NULL,
+  external_marks  DECIMAL(5,2) NULL,
+  total_marks     DECIMAL(5,2) NULL,
+  percentage      DECIMAL(5,2) NULL,
   FOREIGN KEY (student_id) REFERENCES users(id),
   FOREIGN KEY (subject_id) REFERENCES subjects(id)
 );
@@ -248,6 +253,7 @@ CREATE INDEX idx_assessments_dept_year_type ON assessments(department_id, study_
 CREATE INDEX idx_assessments_subject_type ON assessments(subject_id, type);
 CREATE INDEX idx_assessment_records_student ON assessment_records(student_id);
 CREATE INDEX idx_results_student_semester ON semester_results(student_id, semester);
+CREATE INDEX idx_results_student_subject ON semester_results(student_id, subject_id);
 CREATE INDEX idx_cgpa_student_semester ON cgpa_summary(student_id, semester);
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read);
 
@@ -260,6 +266,9 @@ CREATE TABLE mark_import_logs (
   records_imported INT NOT NULL,
   failed_records  INT NOT NULL,
   status          VARCHAR(50) NOT NULL,
+  import_details  LONGTEXT NULL,
+  assessment_type VARCHAR(50) NULL,
+  custom_assessment_name VARCHAR(100) NULL,
   FOREIGN KEY (uploaded_by) REFERENCES users(id),
   FOREIGN KEY (department_id) REFERENCES departments(id)
 );

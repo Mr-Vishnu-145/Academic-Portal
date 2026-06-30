@@ -47,6 +47,9 @@ public class User {
     @Column(name = "staff_id_code", unique = true, length = 20)
     private String staffIdCode; // staff/hod only
 
+    @Column(name = "designation", length = 100)
+    private String designation; // staff/hod only
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 

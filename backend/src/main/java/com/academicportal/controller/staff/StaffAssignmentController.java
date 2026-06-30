@@ -26,11 +26,11 @@ public class StaffAssignmentController {
             @AuthenticationPrincipal User staff,
             @RequestBody Map<String, Object> payload) {
         try {
-            Integer subjectId = (Integer) payload.get("subjectId");
+            Integer subjectId = com.academicportal.util.TypeParser.parseInt(payload.get("subjectId"));
             String title = (String) payload.get("title");
             String description = (String) payload.get("description");
             LocalDate dueDate = LocalDate.parse((String) payload.get("dueDate"));
-            Integer maxMarks = (Integer) payload.get("maxMarks");
+            Integer maxMarks = com.academicportal.util.TypeParser.parseInt(payload.get("maxMarks"));
 
             Assessment assignment = assignmentService.createAssignment(
                     subjectId, title, description, dueDate, maxMarks, staff);
@@ -52,7 +52,7 @@ public class StaffAssignmentController {
             @AuthenticationPrincipal User staff,
             @RequestBody Map<String, Object> payload) {
         try {
-            Integer submissionId = (Integer) payload.get("submissionId");
+            Integer submissionId = com.academicportal.util.TypeParser.parseInt(payload.get("submissionId"));
             double marks = Double.parseDouble(payload.get("marks").toString());
 
             AssessmentRecord graded = assignmentService.gradeSubmission(submissionId, marks, staff);

@@ -32,7 +32,7 @@ public class StudentAssignmentController {
     @PostMapping("/submit")
     public ResponseEntity<?> submit(@AuthenticationPrincipal User student, @RequestBody Map<String, Object> payload) {
         try {
-            Integer assignmentId = (Integer) payload.get("assignmentId");
+            Integer assignmentId = com.academicportal.util.TypeParser.parseInt(payload.get("assignmentId"));
             String fileUrl = (String) payload.get("fileUrl");
             
             AssessmentRecord submission = assignmentService.submitAssignment(assignmentId, student, fileUrl);

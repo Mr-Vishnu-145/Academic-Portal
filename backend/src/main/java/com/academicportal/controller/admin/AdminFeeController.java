@@ -34,8 +34,8 @@ public class AdminFeeController {
     @PostMapping
     public ResponseEntity<?> createFeeStructure(@RequestBody Map<String, Object> payload) {
         try {
-            Integer departmentId = (Integer) payload.get("departmentId");
-            Integer year = (Integer) payload.get("year");
+            Integer departmentId = com.academicportal.util.TypeParser.parseInt(payload.get("departmentId"));
+            Integer year = com.academicportal.util.TypeParser.parseInt(payload.get("year"));
             String feeType = (String) payload.get("feeType");
             double amount = Double.parseDouble(payload.get("amount").toString());
             LocalDate dueDate = LocalDate.parse((String) payload.get("dueDate"));

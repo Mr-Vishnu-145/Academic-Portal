@@ -61,6 +61,18 @@ public class SemesterResult {
     @Column(name = "cleared_semester")
     private Integer clearedSemester;
 
+    @Column(name = "internal_marks", precision = 5, scale = 2)
+    private BigDecimal internalMarks;
+
+    @Column(name = "external_marks", precision = 5, scale = 2)
+    private BigDecimal externalMarks;
+
+    @Column(name = "total_marks", precision = 5, scale = 2)
+    private BigDecimal totalMarks;
+
+    @Column(name = "percentage", precision = 5, scale = 2)
+    private BigDecimal percentage;
+
     // Backwards-compatibility alias getters for frontend
     public Integer getOriginalSemester() {
         return this.semester;

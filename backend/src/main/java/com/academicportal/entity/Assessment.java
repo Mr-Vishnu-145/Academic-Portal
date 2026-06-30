@@ -26,7 +26,7 @@ public class Assessment {
     @Column(nullable = false, length = 20)
     private AssessmentType type; // EXAM, ASSIGNMENT
 
-    @Column(name = "sub_type", nullable = false, length = 20)
+    @Column(name = "sub_type", nullable = false, length = 50)
     private String subType; // CAT1, CAT2, MODEL, SEMESTER, ARREAR, ASSIGNMENT, etc.
 
     @Column(nullable = false, length = 200)
