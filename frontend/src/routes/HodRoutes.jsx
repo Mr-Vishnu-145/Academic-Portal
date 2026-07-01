@@ -1,71 +1,76 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
 import MarkImportPage from '../pages/MarkImportPage';
 import SemesterResultUploadPage from '../pages/SemesterResultUploadPage';
-import { Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, Save, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { 
+  Users, Briefcase, Award, GraduationCap, ShieldAlert, PlusCircle, 
+  Save, Eye, EyeOff, CheckCircle, RefreshCw, XCircle, ArrowRight, ShieldCheck, ArrowLeft 
+} from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 import useStaffUpdates from '../hooks/useStaffUpdates';
 
 const HodLayout = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const showBackButton = !location.pathname.toLowerCase().endsWith('/dashboard');
 
   const getHeaderInfo = (pathname) => {
     const path = pathname.toLowerCase().replace(/\/$/, '');
     if (path.endsWith('/dashboard')) {
       return {
-        title: 'Dashboard',
-        subtitle: `Welcome back, Dr. ${user?.name ? user.name.split(' ').pop() : 'Connor'}! Department management overview.`
+        title: 'HOD Executive Cockpit',
+        subtitle: `Departmental management console for Dr. ${user?.name ? user.name.split(' ').pop() : 'Connor'}.`
       };
     }
     if (path.endsWith('/profile')) {
       return {
-        title: 'My Profile',
-        subtitle: 'View and manage HOD profile details.'
+        title: 'HOD Session Profile',
+        subtitle: 'View your official credentials and security settings.'
       };
     }
     if (path.endsWith('/students')) {
       return {
-        title: 'Department Students',
-        subtitle: `View and monitor students in the ${user?.departmentCode || 'CSE'} department.`
+        title: 'Student Demographics Registry',
+        subtitle: `Track and monitor active learners enrolled in the ${user?.departmentCode || 'CSE'} department.`
       };
     }
     if (path.endsWith('/staff')) {
       return {
-        title: 'Staff Directory',
-        subtitle: 'Register new staff members and assign year permissions.'
+        title: 'Faculty & Instructor Directory',
+        subtitle: 'Register faculty accounts and assign academic year oversight.'
       };
     }
     if (path.endsWith('/exams')) {
       return {
-        title: 'Exam Schedule Tracker',
-        subtitle: 'Review department-wide exam schedules and timetables.'
+        title: 'Exam Coordination Board',
+        subtitle: 'Supervise department-wide test timetables and hall logs.'
       };
     }
     if (path.endsWith('/results/upload')) {
       return {
-        title: 'Semester Result Upload',
-        subtitle: 'Upload semester end exam marksheets in draft status.'
+        title: 'Import Term Results',
+        subtitle: 'Compile semester end exam draft marksheets for publication.'
       };
     }
     if (path.endsWith('/results')) {
       return {
-        title: 'Publish Results',
-        subtitle: 'Review and release student semester exam results to calculate CGPA.'
+        title: 'Release Semester Grades',
+        subtitle: 'Audit and approve final grades to calculate student SGPA/CGPA records.'
       };
     }
     if (path.endsWith('/import-marks')) {
       return {
-        title: 'Mark Import & Auto Entry',
-        subtitle: 'Upload department mark sheets and automatically extract/manage student grades.'
+        title: 'Automatic Grade Extraction',
+        subtitle: 'OCR and Excel file grade processor for HOD validation.'
       };
     }
     return {
-      title: 'HOD Portal',
-      subtitle: `Welcome, ${user?.name}`
+      title: 'Department Workspace',
+      subtitle: `Authorized: HOD Session`
     };
   };
 
@@ -74,20 +79,36 @@ const HodLayout = ({ children }) => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <div className="portal-content">
-        <div className="content-header">
+        {showBackButton && (
+          <button className="btn-back" onClick={() => navigate(-1)}>
+            <ArrowLeft size={14} /> Back
+          </button>
+        )}
+        <div className="content-header" style={{ marginBottom: '24px' }}>
           <div className="page-title-group">
             <h1 className="page-title">{headerInfo.title}</h1>
             <p className="page-subtitle">{headerInfo.subtitle}</p>
           </div>
-          <div className="user-profile-summary">
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: '600' }}>{user?.name}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Head of Department</div>
-            </div>
-            <div className="avatar">{user?.name ? user.name.charAt(0) : 'H'}</div>
-          </div>
         </div>
         {children}
+        <footer style={{ 
+          marginTop: 'auto', 
+          paddingTop: '32px', 
+          paddingBottom: '16px', 
+          borderTop: '1px solid var(--border)', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          color: 'var(--text-muted)', 
+          fontSize: '12px',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div>&copy; {new Date().getFullYear()} Academic Portal. Enterprise Grade.</div>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <span>Status: <strong style={{ color: 'var(--success)' }}>All Systems Operational</strong></span>
+          </div>
+        </footer>
       </div>
     </div>
   );
@@ -115,38 +136,69 @@ const HodDashboard = () => {
       });
   }, []);
 
-  if (loading) return <div>Loading HOD dashboard...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '220px' }} />;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Aurora Welcome Header */}
+      <div className="aurora-container">
+        <div className="aurora-bg">
+          <div className="aurora-blob aurora-blob-1" />
+          <div className="aurora-blob aurora-blob-2" />
+        </div>
+        <div className="welcome-content">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: '700', fontSize: '13px', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <ShieldCheck size={16} />
+            <span>Administrative Command</span>
+          </div>
+          <h2 style={{ fontSize: '26px', fontWeight: '800', marginBottom: '8px' }}>Welcome, HOD of {stats?.departmentName || 'CSE'}</h2>
+          <p style={{ fontSize: '14.5px', color: 'var(--text-secondary)' }}>
+            Oversight active for academic schedules, grade registries, and results validation. 
+            All changes will immediately replicate across student nodes.
+          </p>
+        </div>
+      </div>
+
       <div className="dashboard-grid">
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-primary"><Users size={24} /></div>
+        <div className="glass-card stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div className="stat-number">{stats?.studentsCount}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Total Students (All Years)</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>Enrolled Students</div>
+          </div>
+          <div className="stat-icon stat-icon-primary">
+            <Users size={24} />
           </div>
         </div>
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-accent"><Briefcase size={24} /></div>
+        <div className="glass-card stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div className="stat-number">{stats?.staffCount}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Department Staff members</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>Department Staff</div>
+          </div>
+          <div className="stat-icon stat-icon-accent">
+            <Briefcase size={24} />
           </div>
         </div>
       </div>
 
-      <div className="glass-card">
-        <h3 style={{ marginBottom: '16px' }}>Department Scope Management</h3>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          As HOD of the <strong>{stats?.departmentName} ({stats?.departmentCode})</strong>, you are responsible for monitoring student records, managing staff roles and duties, and finalizing semester results publication to calculate student GPAs.
+      <div className="glass-card" style={{ padding: '24px' }}>
+        <h3 style={{ marginBottom: '12px' }}>Operational Scope Settings</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.7', marginBottom: '20px' }}>
+          As Head of the <strong>{stats?.departmentName} ({stats?.departmentCode})</strong>, your access level permits you to govern employee access tokens, register study sections, set examinations, and sign off on terminal SGPA reports.
         </p>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <Link to="/hod/results" className="btn btn-primary" style={{ display: 'inline-flex', gap: '8px', minHeight: '40px' }}>
+            Go to Results Release <ArrowRight size={16} />
+          </Link>
+          <Link to="/hod/staff" className="btn btn-secondary" style={{ minHeight: '40px' }}>Faculty Directory</Link>
+        </div>
       </div>
+
     </div>
   );
 };
 
-// 2. Manage Staff
+// 2. Manage Staff (with WebSocket transfers live status indicators)
 const ManageStaffPage = () => {
   const { authenticatedFetch, user } = useAuth();
   const [staffList, setStaffList] = useState([]);
@@ -191,11 +243,11 @@ const ManageStaffPage = () => {
       .catch(() => {});
   };
 
-  // Live WebSocket updates — refresh staff list instantly when any dept transfer happens
+  // Live WebSocket updates — refresh list instantly
   useStaffUpdates((event) => {
     if (event.type === 'DEPT_TRANSFER') {
       fetchStaff();
-      setLiveToast(`🔄 ${event.staffName} transferred to ${event.newDeptCode}`);
+      setLiveToast(`🔄 Staff Shift: ${event.staffName} transferred to ${event.newDeptCode}`);
       setTimeout(() => setLiveToast(null), 4000);
     }
   });
@@ -269,7 +321,7 @@ const ManageStaffPage = () => {
       
     const payload = role === 'STAFF' 
       ? { name, email, phone, year: parseInt(year), isActive, designation, staffIdCode, ...(isEdit && deptId ? { departmentId: parseInt(deptId) } : {}) }
-      : { name, email, phone, year: parseInt(year), registerNumber, isActive, section };
+      : { name, email, phone, year: parseInt(year), registerNumber, section, isActive };
 
     if (password) {
       payload.password = password;
@@ -300,7 +352,7 @@ const ManageStaffPage = () => {
     }
   };
 
-  if (loading) return <div>Loading staff list...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <>
@@ -308,23 +360,23 @@ const ManageStaffPage = () => {
       {liveToast && (
         <div style={{
           position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
-          background: 'linear-gradient(135deg, var(--primary), var(--accent))',
+          background: 'linear-gradient(135deg, var(--primary), var(--primary-light))',
           color: '#fff', padding: '12px 20px', borderRadius: '10px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           fontSize: '14px', fontWeight: '600',
           animation: 'slideInRight 0.3s ease',
           display: 'flex', alignItems: 'center', gap: '10px'
         }}>
-          <span style={{ fontSize: '18px' }}>🔄</span>
+          <RefreshCw size={18} className="animate-spin" />
           <span>{liveToast}</span>
         </div>
       )}
 
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2>Faculty & Staff Registry</h2>
-          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px' }}>
-            <PlusCircle size={18} /> Add Faculty
+          <h2>Faculty Directory</h2>
+          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px', minHeight: '36px' }}>
+            <PlusCircle size={16} /> Register Instructor
           </button>
         </div>
 
@@ -332,11 +384,11 @@ const ManageStaffPage = () => {
           <table className="portal-table">
             <thead>
               <tr>
-                <th>Staff Code</th>
-                <th>Name</th>
-                <th>Email</th>
+                <th>Faculty Code</th>
+                <th>Instructor Name</th>
+                <th>Email Address</th>
                 <th>Designation</th>
-                <th>Assigned Year</th>
+                <th>Oversight Year</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
@@ -344,11 +396,11 @@ const ManageStaffPage = () => {
             <tbody>
               {staffList.map((s) => (
                 <tr key={s.id}>
-                  <td style={{ fontWeight: '600' }}>{s.staffIdCode}</td>
+                  <td style={{ fontWeight: '700' }}>{s.staffIdCode}</td>
                   <td>{s.name}</td>
                   <td>{s.email}</td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{s.designation || '—'}</td>
-                  <td style={{ fontWeight: '600', color: 'var(--primary)' }}>Year {s.year}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{s.designation || '—'}</td>
+                  <td style={{ fontWeight: '700', color: 'var(--primary)' }}>Year {s.year}</td>
                   <td>
                     <span className={`badge ${s.isActive ? 'badge-success' : 'badge-danger'}`}>
                       {s.isActive ? 'Active' : 'Inactive'}
@@ -356,11 +408,11 @@ const ManageStaffPage = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button className="btn btn-secondary" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>
+                      <button className="btn btn-secondary" onClick={() => startEdit(s)} style={{ padding: '4px 10px', minHeight: '28px', fontSize: '12px' }}>
                         Edit
                       </button>
-                      <button className="btn btn-secondary" onClick={() => setDeleteConfirm(s.id)} style={{ padding: '4px 8px', color: 'var(--danger)' }}>
-                        Delete
+                      <button className="btn btn-secondary" onClick={() => setDeleteConfirm(s.id)} style={{ padding: '4px 10px', minHeight: '28px', fontSize: '12px', color: 'var(--danger)' }}>
+                        Deactivate
                       </button>
                     </div>
                   </td>
@@ -372,11 +424,14 @@ const ManageStaffPage = () => {
       </div>
 
       {addModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '20px' }}>{editUser ? 'Update Department User' : 'Register Department User'}</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="widget-header">
+              <h3>{editUser ? 'Update Employee File' : 'Register Department Account'}</h3>
+              <button onClick={() => { setAddModal(false); setEditUser(null); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={18} /></button>
+            </div>
             {error && (
-              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', color: '#f87171' }}>
+              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px' }}>
                 <span>{error}</span>
               </div>
             )}
@@ -396,13 +451,13 @@ const ManageStaffPage = () => {
               
               {!editUser && (
                 <div className="form-group">
-                  <label className="form-label">Role</label>
+                  <label className="form-label">Role Category</label>
                   <CustomSelect
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     options={[
-                      { value: 'STAFF', label: 'Staff' },
-                      { value: 'STUDENT', label: 'Student' }
+                      { value: 'STAFF', label: 'Faculty Staff' },
+                      { value: 'STUDENT', label: 'Student Enrollee' }
                     ]}
                   />
                 </div>
@@ -414,7 +469,7 @@ const ManageStaffPage = () => {
                   <CustomSelect
                     value={deptId}
                     onChange={(e) => setDeptId(e.target.value)}
-                    options={departments.map(d => ({ value: d.id, label: `${d.code} — ${d.name}` }))}
+                    options={departments.map(d => ({ value: String(d.id), label: `${d.code} — ${d.name}` }))}
                   />
                 ) : (
                   <input type="text" className="form-control" value={user?.departmentCode || 'N/A'} readOnly style={{ background: 'rgba(255,255,255,0.04)', cursor: 'default', color: 'var(--text-secondary)' }} />
@@ -424,7 +479,7 @@ const ManageStaffPage = () => {
               {role === 'STUDENT' ? (
                 <>
                   <div className="form-group">
-                    <label className="form-label">Study Year</label>
+                    <label className="form-label">Oversight Year</label>
                     <CustomSelect
                       value={year}
                       onChange={(e) => setYear(e.target.value)}
@@ -463,12 +518,12 @@ const ManageStaffPage = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Employee ID / Staff Code</label>
+                    <label className="form-label">Employee ID Code</label>
                     <input type="text" className="form-control" placeholder="STFXXXXXX" value={staffIdCode} onChange={(e) => setStaffIdCode(e.target.value)} required />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Designation</label>
-                    <input type="text" className="form-control" placeholder="e.g. Professor" value={designation} onChange={(e) => setDesignation(e.target.value)} required />
+                    <input type="text" className="form-control" placeholder="e.g. Associate Professor" value={designation} onChange={(e) => setDesignation(e.target.value)} required />
                   </div>
                 </>
               )}
@@ -501,7 +556,6 @@ const ManageStaffPage = () => {
                       alignItems: 'center',
                       outline: 'none'
                     }}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -524,7 +578,7 @@ const ManageStaffPage = () => {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
-                  {saving ? 'Saving...' : (editUser ? 'Update' : 'Register')}
+                  {saving ? 'Saving...' : (editUser ? 'Update Details' : 'Register Account')}
                 </button>
                 <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setEditUser(null); setError(''); }}>Cancel</button>
               </div>
@@ -535,18 +589,18 @@ const ManageStaffPage = () => {
 
       {deleteConfirm && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 110, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldAlert size={20} /> Deactivate Staff Member
+              <ShieldAlert size={20} /> Deactivate Instructor
             </h3>
             <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              Are you sure you want to deactivate this staff member? This will disable their portal login and set their status to Inactive.
+              Are you sure you want to deactivate this staff account? They will lose their grading permission rights immediately.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setDeleteConfirm(null)} style={{ padding: '8px 16px', fontSize: '14px' }}>
                 Cancel
               </button>
-              <button type="button" className="btn" onClick={confirmDelete} style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              <button type="button" className="btn btn-primary" onClick={confirmDelete} style={{ background: 'var(--danger)', color: '#fff', border: 'none' }}>
                 Deactivate
               </button>
             </div>
@@ -683,15 +737,15 @@ const DeptStudentsPage = () => {
     }
   };
 
-  if (loading) return <div>Loading department students...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <>
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2>Department Student Demographics</h2>
-          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px' }}>
-            <PlusCircle size={18} /> Add Student
+          <h2>Student Demographics</h2>
+          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px', minHeight: '36px' }}>
+            <PlusCircle size={16} /> Register Student
           </button>
         </div>
 
@@ -700,9 +754,9 @@ const DeptStudentsPage = () => {
             <thead>
               <tr>
                 <th>Register Number</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Year / Section</th>
+                <th>Full Name</th>
+                <th>Email Address</th>
+                <th>Year & Section</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
@@ -710,10 +764,10 @@ const DeptStudentsPage = () => {
             <tbody>
               {students.map((s) => (
                 <tr key={s.id}>
-                  <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
+                  <td style={{ fontWeight: '700' }}>{s.registerNumber}</td>
                   <td>{s.name}</td>
                   <td>{s.email}</td>
-                  <td>Year {s.year}{s.section ? ` - Sec ${s.section}` : ''}</td>
+                  <td style={{ fontWeight: '600', color: 'var(--primary)' }}>Year {s.year} — Section {s.section || 'A'}</td>
                   <td>
                     <span className={`badge ${s.isActive ? 'badge-success' : 'badge-danger'}`}>
                       {s.isActive ? 'Active' : 'Inactive'}
@@ -721,11 +775,11 @@ const DeptStudentsPage = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button className="btn btn-secondary" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>
+                      <button className="btn btn-secondary" onClick={() => startEdit(s)} style={{ padding: '4px 10px', minHeight: '28px', fontSize: '12px' }}>
                         Edit
                       </button>
-                      <button className="btn btn-secondary" onClick={() => setDeleteConfirm(s.id)} style={{ padding: '4px 8px', color: 'var(--danger)' }}>
-                        Delete
+                      <button className="btn btn-secondary" onClick={() => setDeleteConfirm(s.id)} style={{ padding: '4px 10px', minHeight: '28px', fontSize: '12px', color: 'var(--danger)' }}>
+                        Deactivate
                       </button>
                     </div>
                   </td>
@@ -737,11 +791,14 @@ const DeptStudentsPage = () => {
       </div>
 
       {addModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '20px' }}>{editUser ? 'Update Department Student' : 'Register Department User'}</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="widget-header">
+              <h3>{editUser ? 'Update Student File' : 'Register Department Student'}</h3>
+              <button onClick={() => { setAddModal(false); setEditUser(null); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={18} /></button>
+            </div>
             {error && (
-              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', color: '#f87171' }}>
+              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px' }}>
                 <span>{error}</span>
               </div>
             )}
@@ -761,13 +818,13 @@ const DeptStudentsPage = () => {
               
               {!editUser && (
                 <div className="form-group">
-                  <label className="form-label">Role</label>
+                  <label className="form-label">Role Category</label>
                   <CustomSelect
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     options={[
-                      { value: 'STUDENT', label: 'Student' },
-                      { value: 'STAFF', label: 'Staff' }
+                      { value: 'STUDENT', label: 'Student Enrollee' },
+                      { value: 'STAFF', label: 'Faculty Staff' }
                     ]}
                   />
                 </div>
@@ -781,7 +838,7 @@ const DeptStudentsPage = () => {
               {role === 'STUDENT' ? (
                 <>
                   <div className="form-group">
-                    <label className="form-label">Study Year</label>
+                    <label className="form-label">Oversight Year</label>
                     <CustomSelect
                       value={year}
                       onChange={(e) => setYear(e.target.value)}
@@ -805,19 +862,21 @@ const DeptStudentsPage = () => {
                   </div>
                 </>
               ) : (
-                <div className="form-group">
-                  <label className="form-label">Assigned Year</label>
-                  <CustomSelect
-                    value={year}
-                    onChange={(e) => setYear(e.target.value)}
-                    options={[
-                      { value: '1', label: 'Year 1' },
-                      { value: '2', label: 'Year 2' },
-                      { value: '3', label: 'Year 3' },
-                      { value: '4', label: 'Year 4' }
-                    ]}
-                  />
-                </div>
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Assigned Year</label>
+                    <CustomSelect
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      options={[
+                        { value: '1', label: 'Year 1' },
+                        { value: '2', label: 'Year 2' },
+                        { value: '3', label: 'Year 3' },
+                        { value: '4', label: 'Year 4' }
+                      ]}
+                    />
+                  </div>
+                </>
               )}
 
               <div className="form-group">
@@ -848,7 +907,6 @@ const DeptStudentsPage = () => {
                       alignItems: 'center',
                       outline: 'none'
                     }}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -871,7 +929,7 @@ const DeptStudentsPage = () => {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={saving}>
-                  {saving ? 'Saving...' : (editUser ? 'Update' : 'Register')}
+                  {saving ? 'Saving...' : (editUser ? 'Update Details' : 'Register Account')}
                 </button>
                 <button type="button" className="btn btn-secondary" onClick={() => { setAddModal(false); setEditUser(null); setError(''); }}>Cancel</button>
               </div>
@@ -882,18 +940,18 @@ const DeptStudentsPage = () => {
 
       {deleteConfirm && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 110, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <ShieldAlert size={20} /> Deactivate Student
             </h3>
             <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              Are you sure you want to deactivate this student? This will disable their portal login and set their status to Inactive.
+              Are you sure you want to deactivate this student account? They will lose access to course portals immediately.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setDeleteConfirm(null)} style={{ padding: '8px 16px', fontSize: '14px' }}>
                 Cancel
               </button>
-              <button type="button" className="btn" onClick={confirmDelete} style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              <button type="button" className="btn btn-primary" onClick={confirmDelete} style={{ background: 'var(--danger)', color: '#fff', border: 'none' }}>
                 Deactivate
               </button>
             </div>
@@ -904,7 +962,7 @@ const DeptStudentsPage = () => {
   );
 };
 
-// 4. Publish Results
+// 4. Publish Results Page (with draft record checklists and warnings)
 const PublishResultsPage = () => {
   const { authenticatedFetch, user } = useAuth();
   const [semester, setSemester] = useState('4');
@@ -912,16 +970,15 @@ const PublishResultsPage = () => {
   const [publishing, setPublishing] = useState(false);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [draftCount, setDraftCount] = useState(null);
-  const [loadingDraft, setLoadingDraft] = useState(true); // start as true
+  const [loadingDraft, setLoadingDraft] = useState(true);
   const [draftError, setDraftError] = useState('');
   const [publishStatus, setPublishStatus] = useState({ type: '', message: '' });
 
-  // departmentId MUST come from user session — HOD is always locked to their dept
   const departmentId = user?.departmentId;
 
   const fetchDraftCount = async (sem) => {
     if (!departmentId) {
-      setDraftError('Your session is missing department info. Please log out and log back in.');
+      setDraftError('Session missing department credentials.');
       setLoadingDraft(false);
       return;
     }
@@ -937,12 +994,12 @@ const PublishResultsPage = () => {
         setDraftCount(typeof data.count === 'number' ? data.count : 0);
       } else {
         const errData = await response.json().catch(() => ({}));
-        setDraftError(errData.error || `Server error ${response.status} — could not load draft count.`);
+        setDraftError(errData.error || `Server error: ${response.status}`);
         setDraftCount(0);
       }
     } catch (err) {
-      console.error('fetchDraftCount error:', err);
-      setDraftError('Network error. Is the backend server running?');
+      console.error(err);
+      setDraftError('Network disconnected. Check backend server.');
       setDraftCount(0);
     } finally {
       setLoadingDraft(false);
@@ -973,13 +1030,13 @@ const PublishResultsPage = () => {
       const data = await response.json();
       if (response.ok) {
         setPublishStatus({ type: 'success', message: data.message || 'Results published successfully.' });
-        fetchDraftCount(semester); // refresh — draft count should now be 0
+        fetchDraftCount(semester);
       } else {
         setPublishStatus({ type: 'error', message: data.error || 'Failed to publish results.' });
       }
     } catch (err) {
       console.error(err);
-      setPublishStatus({ type: 'error', message: 'Network error while publishing. Is the backend running?' });
+      setPublishStatus({ type: 'error', message: 'Network timeout during publication.' });
     } finally {
       setPublishing(false);
     }
@@ -988,59 +1045,58 @@ const PublishResultsPage = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '620px' }}>
 
-      {/* Success / Error status banners */}
       {publishStatus.type === 'success' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px', borderRadius: '8px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
-          <CheckCircle size={20} style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: '14px' }}>{publishStatus.message}</span>
+        <div className="alert-banner alert-banner-success">
+          <CheckCircle size={18} />
+          <span>{publishStatus.message}</span>
         </div>
       )}
       {publishStatus.type === 'error' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px', borderRadius: '8px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
-          <ShieldAlert size={20} style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: '14px' }}>{publishStatus.message}</span>
+        <div className="alert-banner alert-banner-danger">
+          <ShieldAlert size={18} />
+          <span>{publishStatus.message}</span>
         </div>
       )}
 
       <div className="glass-card" style={{ width: '100%' }}>
-        <h2 style={{ marginTop: 0, marginBottom: '6px' }}>Publish Academic Results</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: 0, marginBottom: '20px' }}>
-          Releasing results makes them visible to students and triggers SGPA/CGPA recalculation.
+        <h2 style={{ marginTop: 0, marginBottom: '6px' }}>Publish Semester Results</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginBottom: '20px' }}>
+          Releasing grades makes semester report cards downloadable for students and locks GPA indices.
         </p>
 
-        {/* Warning banner */}
-        <div style={{ padding: '12px 16px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', color: '#fcd34d', fontSize: '13px', marginBottom: '20px', lineHeight: '1.6' }}>
-          ⚠ <strong>Warning:</strong> This action cannot be undone. Published results will be immediately visible to all students.
+        <div style={{ padding: '16px', background: 'var(--warning-surface)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 'var(--radius-sm)', color: 'var(--warning)', fontSize: '13px', marginBottom: '20px', display: 'flex', gap: '8px' }}>
+          <ShieldAlert size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <strong>Irreversible Action:</strong> Releasing grades instantly triggers WebHook updates and alerts student profiles. Recalculation takes up to 30 seconds.
+          </div>
         </div>
 
-        {/* Department locked badge */}
-        <div className="form-group" style={{ marginBottom: '16px' }}>
-          <label className="form-label">Department (locked to your dept)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', fontSize: '14px' }}>
-            <Briefcase size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+        <div className="form-group" style={{ marginBottom: '20px' }}>
+          <label className="form-label">Authorized Department Scope</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-muted)', border: '1px solid var(--border)', fontSize: '14px' }}>
+            <Briefcase size={16} style={{ color: 'var(--primary)' }} />
             {departmentId ? (
-              <strong style={{ color: 'var(--primary)' }}>{user.departmentCode} (ID: {departmentId})</strong>
+              <strong style={{ color: 'var(--primary)' }}>{user.departmentCode} Department (ID: {departmentId})</strong>
             ) : (
-              <span style={{ color: '#f87171' }}>⚠ Department not found in session — please re-login</span>
+              <span style={{ color: 'var(--danger)' }}>⚠ Session invalid. Re-login.</span>
             )}
           </div>
         </div>
 
         <form onSubmit={handlePublish}>
           <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label className="form-label">Academic Year</label>
+            <label className="form-label">Academic Calendar Year</label>
             <CustomSelect
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
               options={[
                 { value: '2025-2026', label: '2025-2026' },
-                { value: '2024-2025', label: '2024-2025' },
-                { value: '2023-2024', label: '2023-2024' }
+                { value: '2024-2025', label: '2024-2025' }
               ]}
             />
           </div>
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label className="form-label">Semester</label>
+          <div className="form-group" style={{ marginBottom: '24px' }}>
+            <label className="form-label">Semester Track</label>
             <CustomSelect
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
@@ -1048,27 +1104,26 @@ const PublishResultsPage = () => {
             />
           </div>
 
-          {/* Live draft count status box */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', marginBottom: '20px', fontSize: '13px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '16px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-muted)', border: '1px solid var(--border)', marginBottom: '24px', fontSize: '13px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {loadingDraft ? (
-                <><span style={{ color: 'var(--text-secondary)' }}>⏳</span><span style={{ color: 'var(--text-secondary)' }}>Checking draft records for Semester {semester}…</span></>
+                <><RefreshCw size={14} className="animate-spin" /><span style={{ color: 'var(--text-muted)' }}>Scanning draft database...</span></>
               ) : draftError ? (
-                <><ShieldAlert size={16} style={{ color: '#f87171', flexShrink: 0 }} /><span style={{ color: '#f87171' }}>{draftError}</span></>
+                <><ShieldAlert size={16} style={{ color: 'var(--danger)' }} /><span>{draftError}</span></>
               ) : draftCount > 0 ? (
-                <><CheckCircle size={16} style={{ color: '#4ade80', flexShrink: 0 }} /><span><strong style={{ color: '#4ade80' }}>{draftCount} unpublished record{draftCount !== 1 ? 's' : ''}</strong> ready to publish for Semester {semester}</span></>
+                <><CheckCircle size={16} style={{ color: 'var(--success)' }} /><span>Ready to Release: <strong>{draftCount} Student Grade records</strong></span></>
               ) : (
-                <><ShieldAlert size={16} style={{ color: '#fbbf24', flexShrink: 0 }} /><span style={{ color: '#fbbf24' }}>No draft results for Semester {semester}. Upload results first via <strong>Results → Upload</strong>.</span></>
+                <><XCircle size={16} style={{ color: 'var(--text-muted)' }} /><span>No drafts found. Upload semester files first.</span></>
               )}
             </div>
-            {/* Manual refresh button */}
             {!loadingDraft && (
               <button
                 type="button"
+                className="btn btn-secondary btn-sm"
                 onClick={() => fetchDraftCount(semester)}
-                style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text-secondary)', padding: '4px 10px', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                style={{ padding: '4px 10px', minHeight: '28px', fontSize: '12px' }}
               >
-                ↻ Refresh
+                Refresh
               </button>
             )}
           </div>
@@ -1076,53 +1131,38 @@ const PublishResultsPage = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ width: '100%', padding: '13px', fontSize: '15px', fontWeight: '600' }}
+            style={{ width: '100%', padding: '13px' }}
             disabled={publishing || loadingDraft || !departmentId || draftCount === 0 || draftCount === null}
           >
-            {publishing ? '⏳ Publishing…' : draftCount > 0 ? `Review & Publish ${draftCount} Record${draftCount !== 1 ? 's' : ''}` : 'Publish Grades'}
+            {publishing ? 'Publishing...' : draftCount > 0 ? `Confirm Publication (${draftCount} records)` : 'Publish Grades'}
           </button>
         </form>
       </div>
 
-      {/* Confirmation modal */}
       {showPublishConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', zIndex: 110, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '460px', maxWidth: '100%', background: 'var(--bg-surface-solid)', padding: '28px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 16px 48px rgba(0,0,0,0.65)' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '700', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldAlert size={20} /> Confirm Publication
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '13px', lineHeight: '1.8' }}>
-              <div><span style={{ color: 'var(--text-secondary)', display: 'inline-block', width: '130px' }}>Department:</span> <strong style={{ color: 'var(--primary)' }}>{user?.departmentCode} (Dept #{departmentId})</strong></div>
-              <div><span style={{ color: 'var(--text-secondary)', display: 'inline-block', width: '130px' }}>Semester:</span> <strong>Semester {semester}</strong></div>
-              <div><span style={{ color: 'var(--text-secondary)', display: 'inline-block', width: '130px' }}>Academic Year:</span> <strong>{academicYear}</strong></div>
-              <div>
-                <span style={{ color: 'var(--text-secondary)', display: 'inline-block', width: '130px' }}>Draft Records:</span>
-                <strong style={{ color: draftCount > 0 ? '#4ade80' : '#fbbf24' }}>
-                  {draftCount} record{draftCount !== 1 ? 's' : ''}
-                </strong>
-              </div>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 110, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '450px', background: 'var(--bg-surface-solid)', padding: '28px', borderRadius: 'var(--radius-lg)' }}>
+            <div className="widget-header">
+              <h3 style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}><ShieldCheck size={20} /> Publish Release Audit</h3>
+              <button onClick={() => setShowPublishConfirm(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={18} /></button>
+            </div>
+            
+            <div style={{ padding: '16px', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13.5px', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              <div>Department: <strong style={{ color: 'var(--primary)' }}>{user?.departmentCode}</strong></div>
+              <div>Semester: <strong>Semester {semester}</strong></div>
+              <div>Academic Term: <strong>{academicYear}</strong></div>
+              <div>Release Size: <strong style={{ color: 'var(--primary)' }}>{draftCount} Grade records</strong></div>
             </div>
 
-            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.7', padding: '12px', background: 'rgba(245,158,11,0.05)', borderRadius: '6px', border: '1px solid rgba(245,158,11,0.1)' }}>
-              {draftCount > 0
-                ? `Publishing will make all ${draftCount} result record(s) for Semester ${semester} visible to students in your department. SGPA and CGPA will be recalculated automatically. This cannot be undone.`
-                : 'No draft results available to publish. Please upload semester results first.'}
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
+              Dr. {user?.name.split(' ').pop()}, this authorization publishes the finalized grades database. GPAs will calculate, and students can download signs instantly.
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowPublishConfirm(false)} style={{ padding: '10px 20px' }}>
-                Cancel
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button type="button" className="btn btn-primary" style={{ flexGrow: 1 }} onClick={doPublish} disabled={publishing}>
+                {publishing ? 'Publishing...' : 'Authorize Release'}
               </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={doPublish}
-                disabled={draftCount === 0 || publishing}
-                style={{ padding: '10px 20px', fontWeight: '600' }}
-              >
-                {publishing ? 'Publishing…' : `Publish ${draftCount} Record${draftCount !== 1 ? 's' : ''}`}
-              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowPublishConfirm(false)}>Cancel</button>
             </div>
           </div>
         </div>

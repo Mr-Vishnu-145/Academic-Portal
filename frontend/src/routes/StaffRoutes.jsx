@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
 import MarkImportPage from '../pages/MarkImportPage';
-import { Users, CheckSquare, Award, BookOpen, Calendar, HelpCircle, Save, PlusCircle, Eye, EyeOff } from 'lucide-react';
+import { 
+  Users, CheckSquare, Award, BookOpen, Calendar, HelpCircle, Save, 
+  PlusCircle, Eye, EyeOff, Sparkles, Clock, ChevronRight, CheckCircle2, ArrowLeft
+} from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 import TimeDropdownPicker from '../components/common/TimeDropdownPicker';
 
@@ -36,19 +39,21 @@ const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
 const StaffLayout = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const showBackButton = !location.pathname.toLowerCase().endsWith('/dashboard');
 
   const getHeaderInfo = (pathname) => {
     const path = pathname.toLowerCase().replace(/\/$/, '');
     if (path.endsWith('/dashboard')) {
       return {
-        title: 'Dashboard',
-        subtitle: `Welcome back, ${user?.name}! Here is your teaching overview.`
+        title: 'Faculty Workspace',
+        subtitle: `Welcome back, ${user?.name}! Here is your pedagogical dashboard.`
       };
     }
     if (path.endsWith('/profile')) {
       return {
-        title: 'My Profile',
-        subtitle: 'View and manage your academic profile details.'
+        title: 'Faculty File Details',
+        subtitle: 'View your staff profile record.'
       };
     }
     if (path.endsWith('/students')) {
@@ -59,37 +64,37 @@ const StaffLayout = ({ children }) => {
     }
     if (path.endsWith('/attendance')) {
       return {
-        title: 'Daily Attendance',
+        title: 'Mark Attendance Workspace',
         subtitle: 'Log and track student class attendance.'
       };
     }
     if (path.endsWith('/marks')) {
       return {
-        title: 'Upload Test Marks',
+        title: 'Continuous Evaluation Tracker',
         subtitle: 'Upload and grade student internal tests and CAT exams.'
       };
     }
     if (path.endsWith('/import-marks')) {
       return {
-        title: 'Mark Import & Auto Entry',
-        subtitle: 'Upload mark sheets and automatically extract, validate, and import marks.'
+        title: 'AI Mark Sheet Importer',
+        subtitle: 'OCR and digital file processor for course marks entries.'
       };
     }
     if (path.endsWith('/assignments')) {
       return {
         title: 'Assignments Manager',
-        subtitle: 'Create, edit, and post assignment briefs for students.'
+        subtitle: 'Post lab sheets, exercises, and deliverables briefs.'
       };
     }
     if (path.endsWith('/exams')) {
       return {
-        title: 'Exam Scheduler',
-        subtitle: 'Configure examination timings, hall numbers, and dates.'
+        title: 'Exam Coordinator Board',
+        subtitle: 'Configure exam schedules, slots, and hall allocation.'
       };
     }
     return {
-      title: 'Staff Portal',
-      subtitle: `Welcome, ${user?.name}`
+      title: 'Pedagogical Workspace',
+      subtitle: `Authorized: Faculty Session`
     };
   };
 
@@ -98,20 +103,36 @@ const StaffLayout = ({ children }) => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <div className="portal-content">
-        <div className="content-header">
+        {showBackButton && (
+          <button className="btn-back" onClick={() => navigate(-1)}>
+            <ArrowLeft size={14} /> Back
+          </button>
+        )}
+        <div className="content-header" style={{ marginBottom: '24px' }}>
           <div className="page-title-group">
             <h1 className="page-title">{headerInfo.title}</h1>
             <p className="page-subtitle">{headerInfo.subtitle}</p>
           </div>
-          <div className="user-profile-summary">
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: '600' }}>{user?.name}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Staff Code: {user?.staffIdCode}</div>
-            </div>
-            <div className="avatar">{user?.name ? user.name.charAt(0) : 'T'}</div>
-          </div>
         </div>
         {children}
+        <footer style={{ 
+          marginTop: 'auto', 
+          paddingTop: '32px', 
+          paddingBottom: '16px', 
+          borderTop: '1px solid var(--border)', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          color: 'var(--text-muted)', 
+          fontSize: '12px',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div>&copy; {new Date().getFullYear()} Academic Portal. Enterprise Grade.</div>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <span>Status: <strong style={{ color: 'var(--success)' }}>All Systems Operational</strong></span>
+          </div>
+        </footer>
       </div>
     </div>
   );
@@ -139,41 +160,73 @@ const StaffDashboard = () => {
       });
   }, []);
 
-  if (loading) return <div>Loading dashboard...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '220px' }} />;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Aurora Welcome Header */}
+      <div className="aurora-container">
+        <div className="aurora-bg">
+          <div className="aurora-blob aurora-blob-1" />
+          <div className="aurora-blob aurora-blob-2" />
+        </div>
+        <div className="welcome-content">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: '700', fontSize: '13px', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <Sparkles size={16} />
+            <span>Faculty Account</span>
+          </div>
+          <h2 style={{ fontSize: '26px', fontWeight: '800', marginBottom: '8px' }}>Welcome, {user?.name}!</h2>
+          <p style={{ fontSize: '14.5px', color: 'var(--text-secondary)' }}>
+            Teaching privileges enabled for department <strong>{user?.departmentCode}</strong>, Year <strong>{stats?.assignedYear || '2'}</strong>.
+            Select an operation below or in the sidebar to organize assignments, schedules, and grades.
+          </p>
+        </div>
+      </div>
+
       <div className="dashboard-grid">
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-primary"><Users size={24} /></div>
+        <div className="glass-card stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div className="stat-number">{stats?.studentsCount}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>My Students</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>My Students</div>
+          </div>
+          <div className="stat-icon stat-icon-primary">
+            <Users size={24} />
           </div>
         </div>
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-accent"><CheckSquare size={24} /></div>
+        <div className="glass-card stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div className="stat-number">{stats?.subjectsHandled}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Assigned Subjects</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>Assigned Courses</div>
+          </div>
+          <div className="stat-icon stat-icon-accent">
+            <CheckSquare size={24} />
           </div>
         </div>
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-success"><BookOpen size={24} /></div>
+        <div className="glass-card stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div className="stat-number">{stats?.assignmentsUploaded}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Uploaded Tasks</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>Active Assignments</div>
+          </div>
+          <div className="stat-icon stat-icon-success">
+            <BookOpen size={24} />
           </div>
         </div>
       </div>
 
       <div className="glass-card">
-        <h3 style={{ marginBottom: '16px' }}>Staff Overview</h3>
-        <p style={{ color: 'var(--text-secondary)', maxWidth: '700px' }}>
-          You have teaching privileges for department <strong>{user?.departmentCode}</strong>, Year <strong>{stats?.assignedYear}</strong>. 
-          Use the side navigation panel to log student attendance, post assignment briefs, schedule semester and test modules, and upload raw marks.
+        <h3 style={{ marginBottom: '16px' }}>Quick Syllabus Log</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.7', marginBottom: '20px' }}>
+          All continuous evaluations (CAT1, CAT2, Model Exams, Assignments) must comply with department frameworks. Please cross-verify students' attendance and internal marks before HOD audit cycles.
         </p>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <Link to="/staff/attendance" className="btn btn-primary" style={{ display: 'inline-flex', gap: '8px', minHeight: '36px' }}>
+            Open Attendance Book <ChevronRight size={16} />
+          </Link>
+          <Link to="/staff/marks" className="btn btn-secondary" style={{ minHeight: '36px' }}>Upload Test Marks</Link>
+        </div>
       </div>
+
     </div>
   );
 };
@@ -186,7 +239,6 @@ const MyStudentsPage = () => {
   const [addModal, setAddModal] = useState(false);
 
   const [editUser, setEditUser] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -272,15 +324,15 @@ const MyStudentsPage = () => {
     }
   };
 
-  if (loading) return <div>Loading students...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <>
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2>Class Student Roster</h2>
-          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px' }}>
-            <PlusCircle size={18} /> Add Student
+          <button className="btn btn-primary" onClick={startAdd} style={{ display: 'flex', gap: '8px', minHeight: '36px' }}>
+            <PlusCircle size={16} /> Register Student
           </button>
         </div>
         <div className="table-container">
@@ -288,9 +340,9 @@ const MyStudentsPage = () => {
             <thead>
               <tr>
                 <th>Register Number</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Year / Section</th>
+                <th>Full Name</th>
+                <th>Email Address</th>
+                <th>Year & Section</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
@@ -298,16 +350,16 @@ const MyStudentsPage = () => {
             <tbody>
               {students.map((s) => (
                 <tr key={s.id}>
-                  <td style={{ fontWeight: '600' }}>{s.registerNumber}</td>
+                  <td style={{ fontWeight: '700' }}>{s.registerNumber}</td>
                   <td>{s.name}</td>
                   <td>{s.email}</td>
-                  <td>Year {s.year}{s.section ? ` - Sec ${s.section}` : ''}</td>
+                  <td style={{ fontWeight: '600', color: 'var(--primary)' }}>Year {s.year} — Section {s.section || 'A'}</td>
                   <td>
                     <span className={`badge ${s.isActive ? 'badge-success' : 'badge-danger'}`}>{s.isActive ? 'Active' : 'Inactive'}</span>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button className="btn btn-secondary" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>Edit</button>
+                      <button className="btn btn-secondary" onClick={() => startEdit(s)} style={{ padding: '4px 10px', minHeight: '28px', fontSize: '12px' }}>Edit</button>
                     </div>
                   </td>
                 </tr>
@@ -318,9 +370,12 @@ const MyStudentsPage = () => {
       </div>
 
       {addModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '20px' }}>{editUser ? 'Edit Student' : 'Register New Student'}</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="widget-header">
+              <h3>{editUser ? 'Edit Student details' : 'Register New Student'}</h3>
+              <button onClick={() => { setAddModal(false); setEditUser(null); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><PlusCircle size={18} style={{ transform: 'rotate(45deg)' }} /></button>
+            </div>
             {error && (
               <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px' }}>
                 <span>{error}</span>
@@ -394,7 +449,6 @@ const MyStudentsPage = () => {
                       alignItems: 'center',
                       outline: 'none'
                     }}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -433,7 +487,6 @@ const MarkAttendancePage = () => {
       setStudents(studentsData);
       setSubjects(subjectsData);
       
-      // Seed default statuses as PRESENT
       const initial = {};
       studentsData.forEach(s => { initial[s.id] = 'PRESENT'; });
       setStatuses(initial);
@@ -470,11 +523,11 @@ const MarkAttendancePage = () => {
     }
   };
 
-  if (loading) return <div>Loading attendance workspace...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div className="glass-card">
-      <h2>Daily Class Attendance Workspace</h2>
+      <h2>Daily Class Attendance Book</h2>
       
       <div style={{ display: 'flex', gap: '20px', margin: '24px 0', flexWrap: 'wrap' }}>
         <div className="form-group" style={{ flexGrow: 1, minWidth: '200px' }}>
@@ -493,13 +546,6 @@ const MarkAttendancePage = () => {
             value={classDate} 
             min={getTodayDateString()} 
             onChange={(e) => setClassDate(e.target.value)} 
-            onClick={(e) => { 
-              try { e.target.showPicker(); } catch (err) {} 
-              const today = getTodayDateString();
-              if (classDate < today) {
-                setClassDate(today);
-              }
-            }}
           />
         </div>
       </div>
@@ -508,8 +554,8 @@ const MarkAttendancePage = () => {
         {students.map(s => (
           <div className="attendance-item" key={s.id}>
             <div>
-              <div style={{ fontWeight: '600' }}>{s.name}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{s.registerNumber}</div>
+              <div style={{ fontWeight: '700' }}>{s.name}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{s.registerNumber}</div>
             </div>
             <div className="attendance-actions">
               <button 
@@ -526,7 +572,7 @@ const MarkAttendancePage = () => {
               </button>
               <button 
                 className={`attendance-btn ${statuses[s.id] === 'OD' ? 'active-present' : ''}`}
-                style={{ backgroundColor: statuses[s.id] === 'OD' ? 'var(--accent)' : 'transparent', color: statuses[s.id] === 'OD' ? 'white' : 'var(--text-secondary)' }}
+                style={{ backgroundColor: statuses[s.id] === 'OD' ? 'var(--primary)' : 'transparent', color: statuses[s.id] === 'OD' ? 'white' : 'var(--text-secondary)' }}
                 onClick={() => changeStatus(s.id, 'OD')}
               >
                 OD
@@ -536,8 +582,8 @@ const MarkAttendancePage = () => {
         ))}
       </div>
 
-      <button className="btn btn-primary" style={{ marginTop: '32px', display: 'flex', gap: '8px' }} onClick={handleSave} disabled={saving}>
-        <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
+      <button className="btn btn-primary" style={{ marginTop: '32px', display: 'flex', gap: '8px', minHeight: '40px' }} onClick={handleSave} disabled={saving}>
+        <Save size={16} /> {saving ? 'Saving...' : 'Settle Attendance Sheet'}
       </button>
     </div>
   );
@@ -594,14 +640,14 @@ const UploadMarksPage = () => {
     }
   };
 
-  if (loading) return <div>Loading marks workspace...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div className="glass-card" style={{ maxWidth: '600px' }}>
-      <h2>Upload Test Marks</h2>
+      <h2>Upload Student Marks</h2>
       <form onSubmit={handleSave} style={{ marginTop: '24px' }}>
         <div className="form-group">
-          <label className="form-label">Student</label>
+          <label className="form-label">Student Enrollee</label>
           <CustomSelect 
             value={selectedStudent} 
             onChange={(e) => setSelectedStudent(e.target.value)}
@@ -617,21 +663,21 @@ const UploadMarksPage = () => {
           />
         </div>
         <div className="form-group">
-          <label className="form-label">Assessment Type</label>
+          <label className="form-label">Assessment Code</label>
           <CustomSelect 
             value={examType} 
             onChange={(e) => setExamType(e.target.value)}
             options={[
-              { value: 'CAT1', label: 'CAT 1' },
-              { value: 'CAT2', label: 'CAT 2' },
-              { value: 'MODEL', label: 'MODEL Exam' },
-              { value: 'ASSIGNMENT', label: 'Assignment' }
+              { value: 'CAT1', label: 'CAT 1 (Unit 1-2)' },
+              { value: 'CAT2', label: 'CAT 2 (Unit 3-4)' },
+              { value: 'MODEL', label: 'Model Examination' },
+              { value: 'ASSIGNMENT', label: 'Continuous Lab Assignment' }
             ]}
           />
         </div>
         <div style={{ display: 'flex', gap: '16px' }}>
           <div className="form-group" style={{ flexGrow: 1 }}>
-            <label className="form-label">Max Marks</label>
+            <label className="form-label">Maximum Evaluation Marks</label>
             <input type="number" className="form-control" value={maxMarks} onChange={(e) => setMaxMarks(e.target.value)} required />
           </div>
           <div className="form-group" style={{ flexGrow: 1 }}>
@@ -639,8 +685,8 @@ const UploadMarksPage = () => {
             <input type="number" step="0.01" className="form-control" value={scored} onChange={(e) => setScored(e.target.value)} required />
           </div>
         </div>
-        <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', width: '100%' }} disabled={saving}>
-          {saving ? 'Uploading...' : 'Upload Marks'}
+        <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', width: '100%', minHeight: '44px' }} disabled={saving}>
+          {saving ? 'Saving...' : 'Upload Student Marks'}
         </button>
       </form>
     </div>
@@ -684,10 +730,9 @@ const ManageAssignmentsPage = () => {
         })
       });
       if (response.ok) {
-        alert('Assignment uploaded.');
+        alert('Assignment uploaded successfully.');
         setTitle('');
         setDesc('');
-        setDueDate('');
       }
     } catch (err) {
       console.error(err);
@@ -696,7 +741,7 @@ const ManageAssignmentsPage = () => {
     }
   };
 
-  if (loading) return <div>Loading assignment manager...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div className="glass-card" style={{ maxWidth: '650px' }}>
@@ -712,38 +757,30 @@ const ManageAssignmentsPage = () => {
         </div>
         <div className="form-group">
           <label className="form-label">Assignment Title</label>
-          <input type="text" className="form-control" placeholder="SQL Lab Exercise" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          <input type="text" className="form-control" placeholder="Joins and Subqueries Lab" value={title} onChange={(e) => setTitle(e.target.value)} required />
         </div>
         <div className="form-group">
-          <label className="form-label">Brief Description</label>
-          <textarea className="form-control" rows="4" placeholder="Enter assignment tasks, upload links..." value={desc} onChange={(e) => setDesc(e.target.value)}></textarea>
+          <label className="form-label">Specifications & Task Details</label>
+          <textarea className="form-control" rows="4" placeholder="Enter instructions, requirements, deliverables..." value={desc} onChange={(e) => setDesc(e.target.value)}></textarea>
         </div>
         <div style={{ display: 'flex', gap: '16px' }}>
           <div className="form-group" style={{ flexGrow: 1 }}>
-            <label className="form-label">Due Date</label>
+            <label className="form-label">Submission Due Date</label>
             <input 
               type="date" 
               className="form-control" 
               value={dueDate} 
               min={getTodayDateString()} 
               onChange={(e) => setDueDate(e.target.value)} 
-              onClick={(e) => { 
-                try { e.target.showPicker(); } catch (err) {} 
-                const today = getTodayDateString();
-                if (dueDate < today) {
-                  setDueDate(today);
-                }
-              }}
-              required 
             />
           </div>
           <div className="form-group" style={{ flexGrow: 1 }}>
-            <label className="form-label">Max Marks</label>
+            <label className="form-label">Evaluation Maximum Weightage</label>
             <input type="number" className="form-control" value={maxMarks} onChange={(e) => setMaxMarks(e.target.value)} required />
           </div>
         </div>
-        <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', width: '100%' }} disabled={saving}>
-          {saving ? 'Uploading...' : 'Publish Assignment'}
+        <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', width: '100%', minHeight: '44px' }} disabled={saving}>
+          {saving ? 'Publishing...' : 'Publish Course Brief'}
         </button>
       </form>
     </div>
@@ -789,7 +826,7 @@ const SetExamSchedulePage = () => {
 
       const todayStr = getTodayDateString();
       if (date < todayStr) {
-        alert('Selected date is in the past. Please choose today or a future date.');
+        alert('Selected date is in the past. Choose a future date.');
         setSaving(false);
         return;
       }
@@ -804,7 +841,7 @@ const SetExamSchedulePage = () => {
           const selHours = parseInt(timeParts[0], 10);
           const selMinutes = parseInt(timeParts[1], 10);
           if (selHours < currentHours || (selHours === currentHours && selMinutes < currentMinutes)) {
-            alert('Selected time is in the past. Please choose a future time.');
+            alert('Selected slot is in the past.');
             setSaving(false);
             return;
           }
@@ -817,12 +854,12 @@ const SetExamSchedulePage = () => {
           subjectId: selectedSub,
           examType: examType,
           examDate: date,
-          examTime: time + ':00', // standard LocalTime formatting
+          examTime: time + ':00',
           hallNumber: hall
         })
       });
       if (response.ok) {
-        alert('Exam schedule updated.');
+        alert('Exam schedule updated successfully.');
         setDate('');
         setTime('');
         setHall('');
@@ -838,11 +875,11 @@ const SetExamSchedulePage = () => {
     }
   };
 
-  if (loading) return <div>Loading exam scheduler...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div className="glass-card" style={{ maxWidth: '600px' }}>
-      <h2>Set Exam Schedule</h2>
+      <h2>Schedule Examination</h2>
       <form onSubmit={handleSave} style={{ marginTop: '24px' }}>
         <div className="form-group">
           <label className="form-label">Subject</label>
@@ -853,7 +890,7 @@ const SetExamSchedulePage = () => {
           />
         </div>
         <div className="form-group">
-          <label className="form-label">Exam Type</label>
+          <label className="form-label">Exam Category</label>
           <CustomSelect 
             value={examType} 
             onChange={(e) => setExamType(e.target.value)}
@@ -875,14 +912,6 @@ const SetExamSchedulePage = () => {
               value={date} 
               min={getTodayDateString()} 
               onChange={(e) => setDate(e.target.value)} 
-              onClick={(e) => { 
-                try { e.target.showPicker(); } catch (err) {} 
-                const today = getTodayDateString();
-                if (date < today) {
-                  setDate(today);
-                }
-              }}
-              required 
             />
           </div>
           <div className="form-group" style={{ flexGrow: 1 }}>
@@ -894,11 +923,11 @@ const SetExamSchedulePage = () => {
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">Hall Number</label>
-          <input type="text" className="form-control" placeholder="LH 301 / MAIN AUDI" value={hall} onChange={(e) => setHall(e.target.value)} required />
+          <label className="form-label">Hall / Classroom Number</label>
+          <input type="text" className="form-control" placeholder="LH 301 / LH 302" value={hall} onChange={(e) => setHall(e.target.value)} required />
         </div>
-        <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', width: '100%' }} disabled={saving}>
-          {saving ? 'Scheduling...' : 'Set Exam Date'}
+        <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', width: '100%', minHeight: '44px' }} disabled={saving}>
+          {saving ? 'Scheduling...' : 'Configure Examination'}
         </button>
       </form>
     </div>

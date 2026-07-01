@@ -88,11 +88,24 @@ const RoleBasedSidebar = ({ sidebarOpen, setSidebarOpen }) => {
   return (
     <div className={`portal-sidebar ${sidebarOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
-        <GraduationCapIcon size={32} style={{ stroke: 'var(--primary)' }} />
-        <span>Academic Portal</span>
+        <div className="sidebar-logo-icon">
+          <GraduationCapIcon size={22} style={{ stroke: 'var(--text-on-dark)', fill: 'none' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span className="sidebar-logo-text">Academic Portal</span>
+          <span className="sidebar-logo-sub">v2.0 Enterprise</span>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 8px', marginBottom: '8px' }}>
+        <div className="sidebar-role-badge">
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+          <span>{user.role} Account</span>
+        </div>
       </div>
       
       <ul className="sidebar-menu">
+        <div className="sidebar-section-label">Main Navigation</div>
         {currentMenu.map((item) => {
           const Icon = item.icon;
           return (
@@ -102,7 +115,7 @@ const RoleBasedSidebar = ({ sidebarOpen, setSidebarOpen }) => {
                 className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
                 onClick={() => setSidebarOpen(false)}
               >
-                <Icon size={20} />
+                <Icon size={18} className="menu-item-icon" />
                 <span>{item.label}</span>
               </NavLink>
             </li>
@@ -114,13 +127,13 @@ const RoleBasedSidebar = ({ sidebarOpen, setSidebarOpen }) => {
         <div 
           className="menu-item" 
           onClick={toggleTheme} 
-          style={{ cursor: 'pointer', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}
+          style={{ cursor: 'pointer', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}
         >
-          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
         </div>
         <div className="menu-item" onClick={handleLogout} style={{ color: 'var(--danger)', cursor: 'pointer' }}>
-          <LogOut size={20} />
+          <LogOut size={18} />
           <span>Logout</span>
         </div>
       </div>

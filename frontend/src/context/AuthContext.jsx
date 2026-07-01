@@ -78,12 +78,9 @@ export const AuthProvider = ({ children }) => {
       headers,
     });
     
-    if (res.status === 401) {
-      console.warn('Unauthorized. Logging out...');
+    if (res.status === 401 || res.status === 403) {
+      console.warn('Unauthorized or expired token session. Logging out...');
       logout();
-    } else if (res.status === 403) {
-      // Handle Forbidden
-      console.warn('Forbidden access attempt.');
     }
     
     return res;

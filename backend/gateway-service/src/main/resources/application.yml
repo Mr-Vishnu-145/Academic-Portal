@@ -1,0 +1,84 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        # Auth Service Routes (Port 8081)
+        - id: auth-service-auth
+          uri: http://127.0.0.1:8081
+          predicates:
+            - Path=/api/auth/**
+        - id: auth-service-profile
+          uri: http://127.0.0.1:8081
+          predicates:
+            - Path=/api/profile/**
+        - id: auth-service-admin-users
+          uri: http://127.0.0.1:8081
+          predicates:
+            - Path=/api/admin/users/**, /api/admin/dashboard
+
+        # Financial Service Routes (Port 8084)
+        - id: financial-service-admin-fees
+          uri: http://127.0.0.1:8084
+          predicates:
+            - Path=/api/admin/fees/**
+        - id: financial-service-student-fees
+          uri: http://127.0.0.1:8084
+          predicates:
+            - Path=/api/student/fees/**
+
+        # Exam Service Routes (Port 8086)
+        - id: exam-service-exams
+          uri: http://127.0.0.1:8086
+          predicates:
+            - Path=/api/exams/**
+        - id: exam-service-student-exams
+          uri: http://127.0.0.1:8086
+          predicates:
+            - Path=/api/student/exams/**
+        - id: exam-service-staff-exams
+          uri: http://127.0.0.1:8086
+          predicates:
+            - Path=/api/staff/exams/**
+
+        # Student Service Routes (Port 8083)
+        - id: student-service-hod-students
+          uri: http://127.0.0.1:8083
+          predicates:
+            - Path=/api/hod/students/**, /api/hod/results/**
+        - id: student-service-staff-records
+          uri: http://127.0.0.1:8083
+          predicates:
+            - Path=/api/staff/attendance/**, /api/staff/marks/**, /api/staff/assignments/**, /api/staff/import-marks/**, /api/staff/students/**
+        - id: student-service-admin-results
+          uri: http://127.0.0.1:8083
+          predicates:
+            - Path=/api/admin/results/**
+        - id: student-service-student
+          uri: http://127.0.0.1:8083
+          predicates:
+            - Path=/api/student/**
+
+        # Academic Service Routes (Port 8082)
+        - id: academic-service-admin-depts
+          uri: http://127.0.0.1:8082
+          predicates:
+            - Path=/api/admin/departments/**
+        - id: academic-service-hod
+          uri: http://127.0.0.1:8082
+          predicates:
+            - Path=/api/hod/**
+        - id: academic-service-staff
+          uri: http://127.0.0.1:8082
+          predicates:
+            - Path=/api/staff/**
+
+        # Notification Service Routes (Port 8085)
+        - id: notification-service
+          uri: http://127.0.0.1:8085
+          predicates:
+            - Path=/api/notifications/**

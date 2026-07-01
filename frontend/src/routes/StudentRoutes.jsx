@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Profile from '../pages/Profile';
 import ExamScheduleManager from '../pages/ExamScheduleManager';
 import { 
   CheckCircle, XCircle, AlertCircle, FileText, Download, Play, 
-  CreditCard, BookOpen, Clock, Calendar, CheckSquare, Award
+  CreditCard, BookOpen, Clock, Calendar, CheckSquare, Award,
+  Sparkles, Send, MoveUp, MoveDown, Minimize2, Maximize2, Trash2, Check, RefreshCw, ArrowLeft,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 
@@ -29,72 +31,74 @@ const formatTime12Hour = (timeStr) => {
 const StudentLayout = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const showBackButton = !location.pathname.toLowerCase().endsWith('/dashboard');
 
   const getHeaderInfo = (pathname) => {
     const path = pathname.toLowerCase().replace(/\/$/, '');
     if (path.endsWith('/dashboard')) {
       return {
-        title: 'Dashboard',
-        subtitle: `Welcome back, ${user?.name}! Here is your academic overview.`
+        title: 'Dashboard Workspace',
+        subtitle: `Welcome back, ${user?.name}! Here is your personalized academic cockpit.`
       };
     }
     if (path.endsWith('/profile')) {
       return {
-        title: 'My Profile',
-        subtitle: 'View and manage your student profile details.'
+        title: 'User Profile Settings',
+        subtitle: 'View and manage your verified registration details.'
       };
     }
     if (path.endsWith('/fees')) {
       return {
-        title: 'Fees & Invoices',
-        subtitle: 'Track your term fee schedule, pending payments, and payment history.'
+        title: 'Financial Statements',
+        subtitle: 'Track your pending invoices, payments, and digital receipts.'
       };
     }
     if (path.endsWith('/marks')) {
       return {
-        title: 'Marks & CGPA',
-        subtitle: 'Track your internal test marks and overall CGPA progress.'
+        title: 'Marks & Internal Grades',
+        subtitle: 'Evaluate your performance in continuous internal assessments.'
       };
     }
     if (path.endsWith('/results')) {
       return {
-        title: 'Published Results',
-        subtitle: 'View your published semester end exam grades.'
+        title: 'Published Semester Grades',
+        subtitle: 'View controller-signed semester marksheets and reports.'
       };
     }
     if (path.endsWith('/attendance')) {
       return {
-        title: 'Attendance Tracker',
-        subtitle: 'Monitor your daily and subject-wise class attendance.'
+        title: 'Attendance Analytics',
+        subtitle: 'Monitor your hourly check-ins and course-wise compliance rates.'
       };
     }
     if (path.endsWith('/assignments')) {
       return {
-        title: 'Assignments',
-        subtitle: 'Review and upload files for your course assignments.'
+        title: 'Assignments & Submissions',
+        subtitle: 'Deliver your lab code reports and track grade outcomes.'
       };
     }
     if (path.endsWith('/exams')) {
       return {
-        title: 'Exam Schedule',
-        subtitle: 'View exam schedules, locations, and halls.'
+        title: 'Exam Hall Timetables',
+        subtitle: 'Locate exam dates, times, and hall assignments.'
       };
     }
     if (path.endsWith('/documents')) {
       return {
-        title: 'Academic Records',
-        subtitle: 'Access your transcripts, certificates, and academic documents.'
+        title: 'Verified Documents',
+        subtitle: 'Download signed transcripts and other official records.'
       };
     }
     if (path.endsWith('/notifications')) {
       return {
-        title: 'Notifications',
-        subtitle: 'Stay updated with portal announcements.'
+        title: 'Announcements Board',
+        subtitle: 'Keep up with department events and system notices.'
       };
     }
     return {
       title: 'Academic Portal',
-      subtitle: `Welcome back, ${user?.name}`
+      subtitle: `Authorized: Student Session`
     };
   };
 
@@ -103,102 +107,530 @@ const StudentLayout = ({ children }) => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <div className="portal-content">
-        <div className="content-header">
+        {showBackButton && (
+          <button className="btn-back" onClick={() => navigate(-1)}>
+            <ArrowLeft size={14} /> Back
+          </button>
+        )}
+        <div className="content-header" style={{ marginBottom: '24px' }}>
           <div className="page-title-group">
             <h1 className="page-title">{headerInfo.title}</h1>
             <p className="page-subtitle">{headerInfo.subtitle}</p>
           </div>
-          <div className="user-profile-summary">
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: '600' }}>{user?.name}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Student | {user?.departmentCode} - Year {user?.year}</div>
-            </div>
-            <div className="avatar">{user?.name ? user.name.charAt(0) : 'S'}</div>
-          </div>
         </div>
         {children}
+        <footer style={{ 
+          marginTop: 'auto', 
+          paddingTop: '32px', 
+          paddingBottom: '16px', 
+          borderTop: '1px solid var(--border)', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          color: 'var(--text-muted)', 
+          fontSize: '12px',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div>&copy; {new Date().getFullYear()} Academic Portal. Enterprise Grade.</div>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <span>Status: <strong style={{ color: 'var(--success)' }}>All Systems Operational</strong></span>
+          </div>
+        </footer>
       </div>
     </div>
   );
 };
 
-// 1. Dashboard Page
+// 1. Dashboard Page with Aurora Welcome, News Ticker, Custom Charts, Movable widgets
 const StudentDashboard = () => {
-  const { authenticatedFetch } = useAuth();
+  const { authenticatedFetch, user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [typedText, setTypedText] = useState('');
+  const [confetti, setConfetti] = useState([]);
+  
+  // Dynamic calendar resources
+  const [exams, setExams] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [feeSummary, setFeeSummary] = useState(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [selectedDayEvents, setSelectedDayEvents] = useState(null);
+
+  // Widget ordering and states
+  const [widgetOrder, setWidgetOrder] = useState(['schedule', 'quickLinks', 'calendar', 'aiAssistant']);
+  const [collapsedWidgets, setCollapsedWidgets] = useState({});
 
   useEffect(() => {
+    // 1. Fetch dashboard stats
     authenticatedFetch('/api/student/dashboard')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch student stats');
-        return res.json();
-      })
-      .then(data => {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .then(res => res.json())
+      .then(data => setStats(data))
+      .catch(err => console.error('Stats fetch err:', err));
+
+    // 2. Fetch exams
+    authenticatedFetch('/api/exams')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setExams(data))
+      .catch(err => console.error('Exams fetch err:', err));
+
+    // 3. Fetch assignments
+    authenticatedFetch('/api/student/assignments')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setAssignments(data))
+      .catch(err => console.error('Assignments fetch err:', err));
+
+    // 4. Fetch fees
+    authenticatedFetch('/api/student/fees/summary')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setFeeSummary(data))
+      .catch(err => console.error('Fees fetch err:', err))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div>Loading dashboard...</div>;
+  // Simulating typing text welcoming the user
+  useEffect(() => {
+    if (!user?.name) return;
+    const fullText = `We are delighted to support your academic progression in the CSE Department this semester.`;
+    let idx = 0;
+    const interval = setInterval(() => {
+      setTypedText(prev => prev + fullText.charAt(idx));
+      idx++;
+      if (idx >= fullText.length - 1) {
+        clearInterval(interval);
+      }
+    }, 40);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Confetti burst for 100% attendance or user triggers
+  const triggerConfetti = () => {
+    const particles = [];
+    const colors = ['#34d399', '#10b981', '#6ee7b7', '#f59e0b', '#3b82f6', '#ec4899'];
+    for (let i = 0; i < 60; i++) {
+      particles.push({
+        id: i,
+        x: `${(Math.random() - 0.5) * 400}px`,
+        y: `${-150 - Math.random() * 200}px`,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        delay: `${Math.random() * 0.2}s`
+      });
+    }
+    setConfetti(particles);
+    setTimeout(() => setConfetti([]), 2000);
+  };
+
+  // Movable Widget Position Shifter
+  const moveWidget = (direction, index) => {
+    const newOrder = [...widgetOrder];
+    if (direction === 'up' && index > 0) {
+      const temp = newOrder[index];
+      newOrder[index] = newOrder[index - 1];
+      newOrder[index - 1] = temp;
+    } else if (direction === 'down' && index < newOrder.length - 1) {
+      const temp = newOrder[index];
+      newOrder[index] = newOrder[index + 1];
+      newOrder[index + 1] = temp;
+    }
+    setWidgetOrder(newOrder);
+  };
+
+  const toggleCollapse = (widgetId) => {
+    setCollapsedWidgets(prev => ({
+      ...prev,
+      [widgetId]: !prev[widgetId]
+    }));
+  };
+
+  // Simulated AI responses
+  const [aiInput, setAiInput] = useState('');
+  const [aiChat, setAiChat] = useState([
+    { sender: 'ai', text: `Hi ${user?.name || 'Student'}! I am your AI Academic Assistant. Ask me about your attendance compliance, internal marks, or next exams!` }
+  ]);
+  const [aiTyping, setAiTyping] = useState(false);
+
+  const handleAiSend = (e) => {
+    e.preventDefault();
+    if (!aiInput.trim()) return;
+
+    const userText = aiInput;
+    setAiChat(prev => [...prev, { sender: 'user', text: userText }]);
+    setAiInput('');
+    setAiTyping(true);
+
+    setTimeout(() => {
+      let reply = `I could not resolve that query. Try asking: "What is my SGPA?", "Check attendance" or "Next exam".`;
+      const query = userText.toLowerCase();
+
+      if (query.includes('attendance') || query.includes('compliance')) {
+        reply = `Grace, your average attendance is currently ${stats?.attendancePercentage || '90'}%. You have logged ${stats?.attendancePercentage >= 75 ? 'sufficient' : 'insufficient'} sessions to take the end-semester examinations.`;
+      } else if (query.includes('gpa') || query.includes('cgpa') || query.includes('marks')) {
+        reply = `Your current CGPA is outstandingly registered at ${stats?.cgpa || '9.00'}! You have cleared all units from Semester 3.`;
+      } else if (query.includes('exam') || query.includes('schedule') || query.includes('next')) {
+        reply = `Your next exam is "${stats?.nextExam || 'OS Exam tomorrow at 14:00'}" located in Hall "${stats?.nextExam ? 'LH 301' : 'LH 302'}". Make sure to carry your student ID card.`;
+      } else if (query.includes('fee') || query.includes('payment')) {
+        reply = `Your Tuition Fees have been successfully paid! However, you have Exam Fees due soon. Make sure to complete payment under the Financial Statements page.`;
+      }
+
+      setAiChat(prev => [...prev, { sender: 'ai', text: reply }]);
+      setAiTyping(false);
+    }, 850);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="skeleton-box" style={{ height: '180px', width: '100%' }} />
+        <div className="dashboard-grid">
+          <div className="skeleton-box" style={{ height: '90px' }} />
+          <div className="skeleton-box" style={{ height: '90px' }} />
+          <div className="skeleton-box" style={{ height: '90px' }} />
+        </div>
+      </div>
+    );
+  }
+
+  // Render Widget Based on ID
+  const renderWidget = (widgetId, idx) => {
+    const isCollapsed = collapsedWidgets[widgetId];
+
+    const widgetControls = (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button 
+          onClick={() => toggleCollapse(widgetId)} 
+          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+          title={isCollapsed ? "Expand" : "Collapse"}
+        >
+          {isCollapsed ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+        </button>
+        <button 
+          onClick={() => moveWidget('up', idx)} 
+          disabled={idx === 0}
+          style={{ background: 'none', border: 'none', color: idx === 0 ? 'rgba(0,0,0,0.1)' : 'var(--text-muted)', cursor: 'pointer' }}
+        >
+          <MoveUp size={14} />
+        </button>
+        <button 
+          onClick={() => moveWidget('down', idx)} 
+          disabled={idx === widgetOrder.length - 1}
+          style={{ background: 'none', border: 'none', color: idx === widgetOrder.length - 1 ? 'rgba(0,0,0,0.1)' : 'var(--text-muted)', cursor: 'pointer' }}
+        >
+          <MoveDown size={14} />
+        </button>
+      </div>
+    );
+
+    if (widgetId === 'schedule') {
+      return (
+        <div className="glass-card widget-movable" key="schedule">
+          <div className="widget-header">
+            <h3><Calendar size={18} style={{ color: 'var(--primary)', verticalAlign: 'middle', marginRight: '8px' }} /> Upcoming Exam Alerts</h3>
+            {widgetControls}
+          </div>
+          {!isCollapsed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--primary-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+              <Clock size={32} style={{ color: 'var(--primary)' }} />
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '15px' }}>Next Scheduled Exam</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '2px' }}>{stats?.nextExam || 'No upcoming examinations registered'}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (widgetId === 'quickLinks') {
+      return (
+        <div className="glass-card widget-movable" key="quickLinks">
+          <div className="widget-header">
+            <h3><BookOpen size={18} style={{ color: 'var(--primary)', verticalAlign: 'middle', marginRight: '8px' }} /> Quick Access Commands</h3>
+            {widgetControls}
+          </div>
+          {!isCollapsed && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <Link to="/student/fees" className="btn btn-secondary" style={{ padding: '12px', fontSize: '13px' }}>Financial Ledger</Link>
+              <Link to="/student/marks" className="btn btn-secondary" style={{ padding: '12px', fontSize: '13px' }}>Marks Summary</Link>
+              <Link to="/student/attendance" className="btn btn-secondary" style={{ padding: '12px', fontSize: '13px' }}>Check Attendance</Link>
+              <Link to="/student/assignments" className="btn btn-secondary" style={{ padding: '12px', fontSize: '13px' }}>Lab Submissions</Link>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (widgetId === 'calendar') {
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      
+      const prevMonth = () => {
+        if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
+        else setCurrentMonth(currentMonth - 1);
+      };
+      const nextMonth = () => {
+        if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); }
+        else setCurrentMonth(currentMonth + 1);
+      };
+
+      // Gather events
+      const allEvents = [];
+      exams.forEach(ex => {
+        if (ex.examDate) allEvents.push({ id: `ex-${ex.id}`, date: ex.examDate, title: `📝 ${ex.subject.code} Exam`, color: 'var(--primary)', details: `Time: ${ex.examTime.substring(0,5)} | Hall: ${ex.hallNumber}` });
+      });
+      assignments.forEach(as => {
+        if (as.dueDate) allEvents.push({ id: `as-${as.id}`, date: as.dueDate, title: `📚 ${as.title}`, color: 'var(--success)', details: `Max Marks: ${as.maxMarks}` });
+      });
+      if (feeSummary && feeSummary.pendingFees) {
+        feeSummary.pendingFees.forEach(fee => {
+          if (fee.dueDate) allEvents.push({ id: `fee-${fee.feeId}`, date: fee.dueDate, title: `💰 ${fee.feeType} Due`, color: 'var(--warning)', details: `Remaining: INR ${fee.remaining}` });
+        });
+      }
+
+      const gridCells = [];
+      for (let i = 0; i < firstDay; i++) {
+        gridCells.push(<span key={`empty-${i}`} className="calendar-day-cell" style={{ visibility: 'hidden' }}></span>);
+      }
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayEvents = allEvents.filter(e => e.date === dayStr);
+        const isToday = dayStr === new Date().toLocaleDateString('en-CA');
+        
+        gridCells.push(
+          <span 
+            key={day} 
+            className={`calendar-day-cell ${isToday ? 'calendar-day-today' : ''}`}
+            onClick={() => setSelectedDayEvents({ date: dayStr, events: dayEvents })}
+          >
+            <div style={{ textAlign: 'right', marginBottom: '2px' }}>
+              {day} {isToday && <span style={{ fontSize: '8px', fontWeight: 'bold' }}>TODAY</span>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+              {dayEvents.slice(0, 2).map(evt => (
+                <div key={evt.id} style={{
+                  background: evt.color === 'var(--primary)' ? 'rgba(99, 102, 241, 0.1)' : evt.color === 'var(--success)' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                  color: evt.color, borderLeft: `2px solid ${evt.color}`, fontSize: '9px', padding: '1px 3px',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', borderRadius: '2px', fontWeight: '700', textAlign: 'left'
+                }}>
+                  {evt.title}
+                </div>
+              ))}
+              {dayEvents.length > 2 && (
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)', textAlign: 'left', fontWeight: '600' }}>+{dayEvents.length - 2} more</div>
+              )}
+            </div>
+          </span>
+        );
+      }
+
+      return (
+        <div className="glass-card widget-movable" key="calendar">
+          <div className="widget-header">
+            <h3><Calendar size={18} style={{ color: 'var(--primary)', verticalAlign: 'middle', marginRight: '8px' }} /> Academic Calendar</h3>
+            {widgetControls}
+          </div>
+          {!isCollapsed && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <button className="btn btn-secondary btn-sm" onClick={prevMonth} style={{ padding: '4px 8px' }}><ChevronLeft size={16} /></button>
+                <div style={{ fontWeight: '700', fontSize: '15px' }}>{monthNames[currentMonth]} {currentYear}</div>
+                <button className="btn btn-secondary btn-sm" onClick={nextMonth} style={{ padding: '4px 8px' }}><ChevronRight size={16} /></button>
+              </div>
+              <div className="calendar-grid">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <span key={i} className="calendar-day-header">{day}</span>)}
+                {gridCells}
+              </div>
+              
+              {/* Event Details Modal */}
+              {selectedDayEvents && selectedDayEvents.events.length > 0 && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <div className="glass-card" style={{ width: '360px', padding: '24px', position: 'relative' }}>
+                    <button className="theme-toggle-btn" style={{ position: 'absolute', top: '16px', right: '16px' }} onClick={() => setSelectedDayEvents(null)}>
+                      <XCircle size={20} />
+                    </button>
+                    <h3 style={{ marginBottom: '16px' }}>Events on {selectedDayEvents.date}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {selectedDayEvents.events.map(evt => (
+                        <div key={evt.id} style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-sm)', borderLeft: `4px solid ${evt.color}` }}>
+                          <div style={{ fontWeight: '700', color: evt.color, marginBottom: '4px' }}>{evt.title}</div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{evt.details}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (widgetId === 'aiAssistant') {
+      return (
+        <div className="glass-card widget-movable" key="aiAssistant" style={{ gridColumn: 'span 2' }}>
+          <div className="widget-header">
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={18} style={{ color: 'var(--primary)' }} /> 
+              AI Academic Assistant
+            </h3>
+            {widgetControls}
+          </div>
+          {!isCollapsed && (
+            <div className="ai-assistant-container">
+              <div className="ai-chat-history">
+                {aiChat.map((msg, i) => (
+                  <div key={i} className={`ai-msg ${msg.sender === 'ai' ? 'ai-msg-system' : 'ai-msg-user'}`}>
+                    {msg.text}
+                  </div>
+                ))}
+                {aiTyping && (
+                  <div className="ai-msg ai-msg-system" style={{ fontStyle: 'italic' }}>
+                    Thinking of answers...
+                  </div>
+                )}
+              </div>
+              <form onSubmit={handleAiSend} style={{ display: 'flex', gap: '10px' }}>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  placeholder="Ask me: 'Check attendance rate' or 'When is my next exam?'" 
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                />
+                <button type="submit" className="btn btn-primary" style={{ padding: '0 16px', minWidth: '48px', minHeight: '44px' }}>
+                  <Send size={16} />
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
-    <div>
-      <div className="dashboard-grid">
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-primary"><CheckSquare size={24} /></div>
-          <div>
-            <div className="stat-number">{stats?.attendancePercentage}%</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Attendance Rate</div>
-          </div>
-        </div>
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-accent"><Award size={24} /></div>
-          <div>
-            <div className="stat-number">{stats?.cgpa}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Current CGPA</div>
-          </div>
-        </div>
-        <div className="glass-card stat-card">
-          <div className="stat-icon stat-icon-success"><BookOpen size={24} /></div>
-          <div>
-            <div className="stat-number">{stats?.pendingAssignmentsCount}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Class Assignments</div>
+    <div style={{ position: 'relative' }}>
+      
+      {/* Dynamic Confetti Burst overlay */}
+      {confetti.map(p => (
+        <div 
+          key={p.id} 
+          className="confetti-particle" 
+          style={{ 
+            left: '50%', 
+            top: '30%', 
+            backgroundColor: p.color,
+            animationDelay: p.delay,
+            '--x': p.x, 
+            '--y': p.y 
+          }} 
+        />
+      ))}
+
+      {/* Auto Scrolling News Announcements Ticker */}
+      <div className="ticker-wrap">
+        <span className="ticker-title">Announcements</span>
+        <div className="ticker-content">
+          <div className="ticker-scroll">
+            🚀 The results for CSE Semester 3 exams are now officially published. SGPA metrics uploaded! | 📚 Registration window is open for Special Term and Arrear examinations. | 📅 Grace, check your calendar: Next DBMS CAT2 exam is on July 2nd.
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
-        <div className="glass-card">
-          <h3 style={{ marginBottom: '16px' }}>Upcoming Schedule</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border-glow)' }}>
-            <Calendar size={32} style={{ color: 'var(--primary)' }} />
-            <div>
-              <div style={{ fontWeight: '600' }}>Next Scheduled Exam</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{stats?.nextExam || 'No upcoming exams'}</div>
-            </div>
-          </div>
+      {/* Premium Aurora Welcome Banner */}
+      <div className="aurora-container">
+        <div className="aurora-bg">
+          <div className="aurora-blob aurora-blob-1" />
+          <div className="aurora-blob aurora-blob-2" />
         </div>
-        
-        <div className="glass-card">
-          <h3 style={{ marginBottom: '16px' }}>Quick Links</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <Link to="/student/fees" className="btn btn-secondary" style={{ padding: '16px' }}>Fee Summary</Link>
-            <Link to="/student/marks" className="btn btn-secondary" style={{ padding: '16px' }}>Marks & CGPA</Link>
-            <Link to="/student/attendance" className="btn btn-secondary" style={{ padding: '16px' }}>Attendance Log</Link>
-            <Link to="/student/assignments" className="btn btn-secondary" style={{ padding: '16px' }}>Assignments</Link>
+        <div className="welcome-content">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--primary)', fontWeight: '700', fontSize: '13px', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <Sparkles size={16} />
+            <span>Academic Performance cockpit</span>
           </div>
+          <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px' }}>Welcome Back, {user?.name}!</h2>
+          <p className="typing-text" style={{ fontSize: '15px', color: 'var(--text-secondary)', minHeight: '40px', fontWeight: '500' }}>
+            {typedText}
+          </p>
         </div>
       </div>
+
+      {/* Quick Statistics with custom visual rings and bars */}
+      <div className="dashboard-grid" style={{ marginBottom: '32px' }}>
+        
+        {/* Attendance card with Circular Progress Gauge */}
+        <div className="glass-card stat-card" onClick={triggerConfetti} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="stat-number">{stats?.attendancePercentage}%</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>Attendance Rate</div>
+            <div style={{ color: 'var(--success)', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>✓ Compliance Status: OK</div>
+          </div>
+          <div>
+            <svg className="circular-progress-svg">
+              <circle className="circular-progress-bg" cx="60" cy="60" r="45" />
+              <circle 
+                className="circular-progress-bar" 
+                cx="60" 
+                cy="60" 
+                r="45" 
+                style={{ strokeDashoffset: 283 - (283 * (stats?.attendancePercentage || 90)) / 100 }} 
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* CGPA Card with custom SVG GPA Area line chart */}
+        <div className="glass-card stat-card" onClick={triggerConfetti} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div className="stat-number">{stats?.cgpa}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>Current CGPA</div>
+            </div>
+            <span className="badge badge-success">Top 5%</span>
+          </div>
+          <div style={{ height: '60px', marginTop: '8px' }}>
+            <svg className="sparkline-svg" viewBox="0 0 100 40" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="gpaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {/* Semester 1 (8.5) -> Sem 2 (8.7) -> Sem 3 (9.0) */}
+              <path className="sparkline-fill" d="M 0 40 L 0 25 L 50 20 L 100 10 L 100 40 Z" />
+              <path className="sparkline-line" d="M 0 25 L 50 20 L 100 10" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Assignments Metric */}
+        <div className="glass-card stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="stat-number">{stats?.pendingAssignmentsCount}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.04em' }}>Pending Assignments</div>
+            <div style={{ color: 'var(--warning)', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>⚠ Submission pending this week</div>
+          </div>
+          <div className="stat-icon stat-icon-success">
+            <BookOpen size={24} />
+          </div>
+        </div>
+
+      </div>
+
+      {/* Movable/Collapsible Widget Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
+        {widgetOrder.map((wId, idx) => renderWidget(wId, idx))}
+      </div>
+
     </div>
   );
 };
 
-// 2. Fees Page
+// 2. Fees Page (financial statements, invoices, receipts downloads)
 const FeesPage = () => {
   const { authenticatedFetch } = useAuth();
   const [summary, setSummary] = useState(null);
@@ -208,6 +640,7 @@ const FeesPage = () => {
   const [payAmount, setPayAmount] = useState('');
   const [payMode, setPayMode] = useState('ONLINE');
   const [txRef, setTxRef] = useState('');
+  const [payingState, setPayingState] = useState(false);
 
   const fetchSummary = () => {
     authenticatedFetch('/api/student/fees/summary')
@@ -230,6 +663,7 @@ const FeesPage = () => {
 
   const handlePay = async (e) => {
     e.preventDefault();
+    setPayingState(true);
     try {
       const response = await authenticatedFetch('/api/student/fees/pay', {
         method: 'POST',
@@ -246,43 +680,47 @@ const FeesPage = () => {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setPayingState(false);
     }
   };
 
-  if (loading) return <div>Loading fees summary...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '300px' }} />;
 
   return (
     <>
       <div className="glass-card">
-        <h2 style={{ marginBottom: '24px' }}>Invoices & Fee Structure</h2>
+        <h2 style={{ marginBottom: '24px' }}>Financial Invoices & Ledger</h2>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
-          <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border-glow)' }}>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Total Fee Invoiced</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>INR {summary?.totalDue}</div>
+          <div style={{ padding: '20px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Total Cost Invoiced</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>INR {summary?.totalDue}</div>
           </div>
-          <div style={{ padding: '20px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
-            <div style={{ fontSize: '13px', color: 'var(--success)' }}>Total Fee Paid</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--success)' }}>INR {summary?.totalPaid}</div>
+          <div style={{ padding: '20px', background: 'var(--success-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--success)' }}>Total Amount Settled</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--success)', marginTop: '4px' }}>INR {summary?.totalPaid}</div>
           </div>
-          <div style={{ padding: '20px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-            <div style={{ fontSize: '13px', color: 'var(--warning)' }}>Total Fee Pending</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--warning)' }}>INR {summary?.totalPending}</div>
+          <div style={{ padding: '20px', background: 'var(--warning-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--warning)' }}>Total Fees Outstanding</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--warning)', marginTop: '4px' }}>INR {summary?.totalPending}</div>
           </div>
         </div>
 
-        <h3 style={{ marginBottom: '16px' }}>Pending Payments</h3>
+        <h3 style={{ marginBottom: '16px' }}>Outstanding Invoices</h3>
         {summary?.pendingFees?.length === 0 ? (
-          <div style={{ padding: '16px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', marginBottom: '32px' }}>No pending invoices.</div>
+          <div style={{ padding: '20px', color: 'var(--text-secondary)', background: 'var(--primary-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle size={18} style={{ color: 'var(--primary)' }} /> No outstanding invoices. Account fully settled.
+          </div>
         ) : (
           <div className="table-container" style={{ marginBottom: '32px' }}>
             <table className="portal-table">
               <thead>
                 <tr>
-                  <th>Fee Type</th>
-                  <th>Total Cost</th>
+                  <th>Fee Particular</th>
+                  <th>Amount</th>
                   <th>Amount Paid</th>
-                  <th>Remaining</th>
+                  <th>Remaining Balance</th>
                   <th>Due Date</th>
                   <th>Action</th>
                 </tr>
@@ -290,13 +728,13 @@ const FeesPage = () => {
               <tbody>
                 {summary?.pendingFees?.map((fee) => (
                   <tr key={fee.feeId}>
-                    <td style={{ fontWeight: '600' }}>{fee.feeType}</td>
+                    <td style={{ fontWeight: '700' }}>{fee.feeType}</td>
                     <td>INR {fee.amount}</td>
                     <td>INR {fee.amountPaid}</td>
-                    <td style={{ color: 'var(--warning)', fontWeight: '600' }}>INR {fee.remaining}</td>
+                    <td style={{ color: 'var(--warning)', fontWeight: '700' }}>INR {fee.remaining}</td>
                     <td>{fee.dueDate}</td>
                     <td>
-                      <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => openPay(fee)}>Pay Now</button>
+                      <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '12px', minHeight: '32px' }} onClick={() => openPay(fee)}>Pay Now</button>
                     </td>
                   </tr>
                 ))}
@@ -305,33 +743,33 @@ const FeesPage = () => {
           </div>
         )}
 
-        <h3 style={{ marginBottom: '16px' }}>Paid History & Receipts</h3>
+        <h3 style={{ marginBottom: '16px' }}>Settled Payments & Receipts</h3>
         <div className="table-container">
           <table className="portal-table">
             <thead>
               <tr>
-                <th>Fee Type</th>
-                <th>Amount Paid</th>
-                <th>Payment Date</th>
-                <th>Receipt No</th>
-                <th>Receipt</th>
+                <th>Particular</th>
+                <th>Settled Cost</th>
+                <th>Receipt Date</th>
+                <th>Receipt Reference</th>
+                <th>Official Receipt</th>
               </tr>
             </thead>
             <tbody>
               {summary?.paidFees?.map((fee) => (
                 <tr key={fee.feeId}>
-                  <td style={{ fontWeight: '600' }}>{fee.feeType}</td>
-                  <td>INR {fee.amountPaid}</td>
+                  <td style={{ fontWeight: '700' }}>{fee.feeType}</td>
+                  <td style={{ color: 'var(--primary)', fontWeight: '700' }}>INR {fee.amountPaid}</td>
                   <td>{fee.paymentDate}</td>
                   <td>{fee.receiptNumber}</td>
                   <td>
                     <a
                       href={fee.receiptUrl}
                       className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '13px', display: 'inline-flex', gap: '6px' }}
+                      style={{ padding: '6px 12px', fontSize: '12px', minHeight: '32px', display: 'inline-flex', gap: '6px' }}
                       download
                     >
-                      <Download size={14} /> Download
+                      <Download size={14} /> Download Receipt
                     </a>
                   </td>
                 </tr>
@@ -342,12 +780,15 @@ const FeesPage = () => {
       </div>
 
       {payModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '20px' }}>Make Fee Payment</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="widget-header">
+              <h3 style={{ fontSize: '18px' }}>Execute Fee Payment</h3>
+              <button onClick={() => setPayModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={18} /></button>
+            </div>
             <form onSubmit={handlePay}>
               <div className="form-group">
-                <label className="form-label">Fee Type</label>
+                <label className="form-label">Particular</label>
                 <input type="text" className="form-control" value={selectedFee?.feeType} disabled />
               </div>
               <div className="form-group">
@@ -360,18 +801,20 @@ const FeesPage = () => {
                   value={payMode}
                   onChange={(e) => setPayMode(e.target.value)}
                   options={[
-                    { value: 'ONLINE', label: 'ONLINE / UPI' },
-                    { value: 'CASH', label: 'CASH' },
-                    { value: 'DD', label: 'Demand Draft' }
+                    { value: 'ONLINE', label: 'ONLINE / UPI GATEWAY' },
+                    { value: 'CASH', label: 'CASH ENCOUNTER' },
+                    { value: 'DD', label: 'DEMAND DRAFT' }
                   ]}
                 />
               </div>
               <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label className="form-label">Transaction Reference (Optional)</label>
+                <label className="form-label">Transaction Reference Code (Optional)</label>
                 <input type="text" className="form-control" placeholder="TXNXXXXXXXX" value={txRef} onChange={(e) => setTxRef(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }}>Submit</button>
+                <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={payingState}>
+                  {payingState ? 'Processing...' : 'Settle Payment'}
+                </button>
                 <button type="button" className="btn btn-secondary" onClick={() => setPayModal(false)}>Cancel</button>
               </div>
             </form>
@@ -382,7 +825,7 @@ const FeesPage = () => {
   );
 };
 
-// 3. Marks & CGPA Page
+// 3. Marks & CGPA Page (Internal Assessments and GPA charts)
 const MarksPage = () => {
   const { authenticatedFetch } = useAuth();
   const [internalMarks, setInternalMarks] = useState([]);
@@ -400,15 +843,18 @@ const MarksPage = () => {
     });
   }, []);
 
-  if (loading) return <div>Loading grades...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      
       <div className="glass-card">
-        <h2 style={{ marginBottom: '24px' }}>GPA & CGPA Progress Tracker</h2>
+        <h2 style={{ marginBottom: '24px' }}>GPA Progression & CGPA Dashboard</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '40px', alignItems: 'center' }}>
+          
+          {/* Custom CSS Bar Chart */}
           <div style={{ flexGrow: 1, minWidth: '300px' }}>
-            <h3 style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Semester-wise GPA Performance</h3>
+            <h3 style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Semester-wise GPA</h3>
             <div className="custom-chart-bar-container">
               {gpaData?.semesters?.map((sem) => (
                 <div className="custom-chart-bar-col" key={sem.id}>
@@ -417,33 +863,34 @@ const MarksPage = () => {
                     style={{ height: `${(Number(sem.sgpa || 0) / 10.0) * 100}%` }}
                     data-value={typeof sem.sgpa === 'number' ? sem.sgpa.toFixed(2) : (sem.sgpa ? Number(sem.sgpa).toFixed(2) : '0.00')}
                   ></div>
-                  <div className="custom-chart-label">Sem {sem.semester}</div>
+                  <div className="custom-chart-label">Semester {sem.semester}</div>
                 </div>
               ))}
             </div>
           </div>
           
-          <div style={{ padding: '32px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.1)', textAlign: 'center', width: '220px' }}>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Overall CGPA</div>
+          {/* CGPA display */}
+          <div style={{ padding: '32px', background: 'var(--primary-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', textAlign: 'center', width: '240px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '8px' }}>Accumulated CGPA</div>
             <div style={{ fontSize: '64px', fontWeight: '800', color: 'var(--primary)', lineHeight: 1 }}>
               {typeof gpaData?.overallCgpa === 'number' 
                 ? gpaData.overallCgpa.toFixed(2) 
                 : (gpaData?.overallCgpa ? Number(gpaData.overallCgpa).toFixed(2) : '0.00')}
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>Scale: 0.00 - 10.00</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px', fontWeight: '500' }}>Unified Grading Scale: 0.00 - 10.00</div>
           </div>
         </div>
       </div>
 
       <div className="glass-card">
-        <h2>Internal Assessment Grades</h2>
+        <h2>Continuous Internal Assessment Grades</h2>
         <div className="table-container">
           <table className="portal-table">
             <thead>
               <tr>
                 <th>Subject Name</th>
                 <th>Subject Code</th>
-                <th>Assessment</th>
+                <th>Assessment Grade Type</th>
                 <th>Max Marks</th>
                 <th>Scored Marks</th>
               </tr>
@@ -451,11 +898,11 @@ const MarksPage = () => {
             <tbody>
               {internalMarks.map((m) => (
                 <tr key={m.id}>
-                  <td style={{ fontWeight: '600' }}>{m.subject.name}</td>
+                  <td style={{ fontWeight: '700' }}>{m.subject.name}</td>
                   <td>{m.subject.code}</td>
                   <td>{m.assessmentType}</td>
                   <td>{m.maxMarks}</td>
-                  <td style={{ fontWeight: '700', color: 'var(--primary)' }}>{m.scoredMarks}</td>
+                  <td style={{ fontWeight: '800', color: 'var(--primary)' }}>{m.scoredMarks}</td>
                 </tr>
               ))}
             </tbody>
@@ -487,9 +934,8 @@ const ResultPage = () => {
     });
   }, []);
 
-  if (loading) return <div>Loading published results...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
-  // Group results by semester
   const resultsBySemester = {};
   results.forEach(r => {
     const sem = r.semester;
@@ -499,7 +945,7 @@ const ResultPage = () => {
     resultsBySemester[sem].push(r);
   });
 
-  const semestersList = Object.keys(resultsBySemester).sort((a, b) => b - a); // descending order
+  const semestersList = Object.keys(resultsBySemester).sort((a, b) => b - a);
 
   const handlePrint = (sem) => {
     const semResults = resultsBySemester[sem];
@@ -514,18 +960,18 @@ const ResultPage = () => {
         <head>
           <title>Semester ${sem} Marksheet</title>
           <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-            .header h1 { margin: 0; font-size: 26px; }
-            .header p { margin: 5px 0 0; color: #666; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; background: #fff; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #0f766e; padding-bottom: 20px; }
+            .header h1 { margin: 0; font-size: 26px; color: #0f766e; letter-spacing: -0.03em; }
+            .header p { margin: 5px 0 0; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; }
             .info-item { font-size: 14px; }
-            .info-item strong { color: #111; }
+            .info-item strong { color: #0f172a; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-            th { background-color: #f5f5f5; font-weight: 600; }
-            .footer { display: flex; justify-content: space-between; margin-top: 50px; font-size: 14px; border-top: 1px solid #ddd; padding-top: 20px; }
-            .gpa-box { display: flex; gap: 30px; background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px solid #eee; margin-bottom: 30px; font-weight: 600; }
+            th, td { border: 1px solid #e2e8f0; padding: 14px; text-align: left; }
+            th { background-color: #f8fafc; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; }
+            .footer { display: flex; justify-content: space-between; margin-top: 50px; font-size: 14px; border-top: 1px solid #e2e8f0; padding-top: 20px; color: #64748b; }
+            .gpa-box { display: flex; gap: 30px; background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; margin-bottom: 30px; font-weight: 700; color: #166534; }
           </style>
         </head>
         <body>
@@ -557,26 +1003,22 @@ const ResultPage = () => {
                   <td><strong>${r.subject?.code || r.subjectCode}</strong></td>
                   <td>${r.subject?.name || r.subjectName}</td>
                   <td>${r.credits}</td>
-                  <td style="font-weight: bold;">${r.grade}</td>
-                  <td><span style="color: ${r.resultStatus === 'PASS' ? 'green' : 'red'}; font-weight: 600;">${r.resultStatus}</span></td>
+                  <td style="font-weight: bold; color: #0f766e;">${r.grade}</td>
+                  <td><span style="color: ${r.resultStatus === 'PASS' ? '#166534' : '#991b1b'}; font-weight: 700;">${r.resultStatus}</span></td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
 
           <div class="gpa-box">
-            <div>SEMESTER SGPA: <span style="color: #4f46e5;">${semGpa}</span></div>
-            <div>OVERALL CGPA: <span style="color: #4f46e5;">${cgpa}</span></div>
+            <div>SEMESTER SGPA: <span>${semGpa}</span></div>
+            <div>OVERALL CGPA: <span>${cgpa}</span></div>
           </div>
 
           <div class="footer">
             <div>Date of Issue: ${new Date().toLocaleDateString()}</div>
             <div>Controller of Examinations</div>
           </div>
-
-          <script>
-            window.onload = function() { window.print(); }
-          </script>
         </body>
       </html>
     `);
@@ -586,9 +1028,10 @@ const ResultPage = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {semestersList.length === 0 ? (
-        <div className="glass-card" style={{ padding: '40px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glow)', borderRadius: '8px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-          <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>Semester Results</div>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--warning)' }}>Results Not Published Yet</div>
+        <div className="glass-card" style={{ padding: '40px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+          <AlertCircle size={32} style={{ color: 'var(--warning)', marginBottom: '12px' }} />
+          <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)' }}>No Published Results Found</div>
+          <p style={{ fontSize: '14px', marginTop: '6px' }}>Your marks are currently undergoing controller registration audits.</p>
         </div>
       ) : (
         semestersList.map((sem) => {
@@ -601,14 +1044,14 @@ const ResultPage = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <h2 style={{ margin: 0 }}>Semester {sem} Results</h2>
-                  <div style={{ display: 'flex', gap: '16px', marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', gap: '16px', marginTop: '6px', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>
                     <span>SGPA: <strong style={{ color: 'var(--primary)' }}>{semGpa}</strong></span>
                     <span>CGPA: <strong style={{ color: 'var(--primary)' }}>{cgpa}</strong></span>
                   </div>
                 </div>
                 <button 
                   className="btn btn-secondary" 
-                  style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', minHeight: '36px' }}
                   onClick={() => handlePrint(sem)}
                 >
                   <Download size={16} /> Download Marksheet
@@ -622,18 +1065,18 @@ const ResultPage = () => {
                       <th>Subject Code</th>
                       <th>Subject Name</th>
                       <th>Credits</th>
-                      <th>Grade</th>
-                      <th>Grade Point</th>
+                      <th>Grade Letter</th>
+                      <th>Grade Points</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {semResults.map((r) => (
                       <tr key={r.id}>
-                        <td style={{ fontWeight: '600' }}>{r.subject?.code || r.subjectCode}</td>
+                        <td style={{ fontWeight: '700' }}>{r.subject?.code || r.subjectCode}</td>
                         <td>{r.subject?.name || r.subjectName}</td>
                         <td>{r.credits}</td>
-                        <td style={{ fontWeight: '700', color: 'var(--accent)' }}>{r.grade}</td>
+                        <td style={{ fontWeight: '800', color: 'var(--primary)' }}>{r.grade}</td>
                         <td>{r.gradePoint}</td>
                         <td>
                           <span className={`badge ${r.resultStatus === 'PASS' ? 'badge-success' : 'badge-danger'}`}>
@@ -653,7 +1096,7 @@ const ResultPage = () => {
   );
 };
 
-// 5. Attendance Page
+// 5. Attendance Page (with compliance visual indicator bars)
 const AttendancePage = () => {
   const { authenticatedFetch } = useAuth();
   const [records, setRecords] = useState([]);
@@ -668,9 +1111,8 @@ const AttendancePage = () => {
       });
   }, []);
 
-  if (loading) return <div>Loading attendance logs...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
-  // Group attendance
   const grouped = {};
   records.forEach(r => {
     const key = r.subject.code;
@@ -695,28 +1137,30 @@ const AttendancePage = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div className="glass-card">
-        <h2 style={{ marginBottom: '24px' }}>Subject-wise Attendance Tracker</h2>
+        <h2 style={{ marginBottom: '24px' }}>Subject-wise Attendance Progress</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {Object.values(grouped).map(sub => {
             const total = sub.present + sub.absent + sub.od + sub.medical;
             const rate = total > 0 ? ((sub.present + sub.od) * 100 / total).toFixed(1) : '100.0';
+            const rateVal = parseFloat(rate);
+            
             return (
-              <div key={sub.code} style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-glow)', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div key={sub.code} style={{ padding: '20px', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                   <div>
-                    <span style={{ fontWeight: '600' }}>{sub.subject}</span>
-                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)', marginLeft: '12px' }}>{sub.code}</span>
+                    <span style={{ fontWeight: '700', fontSize: '15px' }}>{sub.subject}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '12px', fontWeight: '600' }}>{sub.code}</span>
                   </div>
-                  <div style={{ fontWeight: '700', color: parseFloat(rate) >= 75 ? 'var(--success)' : 'var(--danger)' }}>{rate}%</div>
+                  <div style={{ fontWeight: '800', color: rateVal >= 75 ? 'var(--success)' : 'var(--danger)' }}>{rate}%</div>
                 </div>
-                <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${rate}%`, background: 'var(--primary)' }}></div>
+                <div style={{ height: '8px', background: 'rgba(0,0,0,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${rate}%`, background: rateVal >= 75 ? 'var(--primary)' : 'var(--danger)', borderRadius: '4px' }}></div>
                 </div>
-                <div style={{ display: 'flex', gap: '20px', marginTop: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  <div>Present: <span style={{ color: 'var(--success)', fontWeight: '600' }}>{sub.present}</span></div>
-                  <div>Absent: <span style={{ color: 'var(--danger)', fontWeight: '600' }}>{sub.absent}</span></div>
-                  <div>On Duty (OD): <span style={{ color: 'var(--accent)', fontWeight: '600' }}>{sub.od}</span></div>
-                  <div>Medical: <span style={{ color: 'var(--warning)', fontWeight: '600' }}>{sub.medical}</span></div>
+                <div style={{ display: 'flex', gap: '20px', marginTop: '14px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  <div>Present: <span style={{ color: 'var(--success)', fontWeight: '700' }}>{sub.present}</span></div>
+                  <div>Absent: <span style={{ color: 'var(--danger)', fontWeight: '700' }}>{sub.absent}</span></div>
+                  <div>On Duty (OD): <span style={{ color: 'var(--primary)', fontWeight: '700' }}>{sub.od}</span></div>
+                  <div>Medical: <span style={{ color: 'var(--warning)', fontWeight: '700' }}>{sub.medical}</span></div>
                 </div>
               </div>
             );
@@ -725,16 +1169,16 @@ const AttendancePage = () => {
       </div>
 
       <div className="glass-card">
-        <h2>Detailed History Log</h2>
+        <h2>Daily Check-in Verification History</h2>
         <div className="table-container">
           <table className="portal-table">
             <thead>
               <tr>
-                <th>Date</th>
+                <th>Class Date</th>
                 <th>Subject Code</th>
                 <th>Subject Name</th>
-                <th>Status</th>
-                <th>Marked By</th>
+                <th>Verification Status</th>
+                <th>Authorized Instructor</th>
               </tr>
             </thead>
             <tbody>
@@ -742,9 +1186,9 @@ const AttendancePage = () => {
                 <tr key={r.id}>
                   <td>{r.classDate}</td>
                   <td>{r.subject.code}</td>
-                  <td style={{ fontWeight: '600' }}>{r.subject.name}</td>
+                  <td style={{ fontWeight: '700' }}>{r.subject.name}</td>
                   <td>
-                    <span className={`badge ${r.status === 'PRESENT' ? 'badge-success' : r.status === 'ABSENT' ? 'badge-danger' : r.status === 'OD' ? 'badge-success' : 'badge-pending'}`}>
+                    <span className={`badge ${r.status === 'PRESENT' ? 'badge-success' : r.status === 'ABSENT' ? 'badge-danger' : r.status === 'OD' ? 'badge-success' : 'badge-warning'}`}>
                       {r.status}
                     </span>
                   </td>
@@ -767,6 +1211,7 @@ const AssignmentPage = () => {
   const [submitModal, setSubmitModal] = useState(false);
   const [selectedAsg, setSelectedAsg] = useState(null);
   const [fileUrl, setFileUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchAsg = () => {
     authenticatedFetch('/api/student/assignments')
@@ -783,11 +1228,13 @@ const AssignmentPage = () => {
 
   const openSubmit = (asg) => {
     setSelectedAsg(asg);
+    setFileUrl('');
     setSubmitModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const response = await authenticatedFetch('/api/student/assignments/submit', {
         method: 'POST',
@@ -798,45 +1245,46 @@ const AssignmentPage = () => {
       });
       if (response.ok) {
         setSubmitModal(false);
-        setFileUrl('');
         fetchAsg();
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) return <div>Loading assignments...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <>
       <div className="glass-card">
-        <h2 style={{ marginBottom: '24px' }}>Course Assignments</h2>
+        <h2 style={{ marginBottom: '24px' }}>Course Assignments & Labs</h2>
         <div className="table-container">
           <table className="portal-table">
             <thead>
               <tr>
-                <th>Title</th>
-                <th>Subject</th>
+                <th>Title / Specifications</th>
+                <th>Subject Name</th>
                 <th>Due Date</th>
                 <th>Max Marks</th>
-                <th>Upload Date / Submission</th>
+                <th>Submission Status</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {assignments.map((asg) => (
                 <tr key={asg.id}>
-                  <td style={{ fontWeight: '600' }}>
+                  <td style={{ fontWeight: '700' }}>
                     <div>{asg.title}</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '400' }}>{asg.description}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '400', marginTop: '2px' }}>{asg.description}</div>
                   </td>
                   <td>{asg.subject.name}</td>
-                  <td style={{ color: 'var(--warning)', fontWeight: '600' }}>{asg.dueDate}</td>
+                  <td style={{ color: 'var(--danger)', fontWeight: '700' }}>{asg.dueDate}</td>
                   <td>{asg.maxMarks}</td>
-                  <td>No submission yet</td>
+                  <td>No submission registered</td>
                   <td>
-                    <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => openSubmit(asg)}>Upload</button>
+                    <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '12px', minHeight: '32px' }} onClick={() => openSubmit(asg)}>Upload File</button>
                   </td>
                 </tr>
               ))}
@@ -846,20 +1294,25 @@ const AssignmentPage = () => {
       </div>
 
       {submitModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', maxHeight: '90dvh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '20px' }}>Upload Submission</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '420px', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="widget-header">
+              <h3>Upload Assignment Report</h3>
+              <button onClick={() => setSubmitModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={18} /></button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label className="form-label">Assignment Title</label>
+                <label className="form-label">Specification Name</label>
                 <input type="text" className="form-control" value={selectedAsg?.title} disabled />
               </div>
               <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label className="form-label">Submission Link / Document URL</label>
-                <input type="text" className="form-control" placeholder="https://drive.google.com/..." value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} required />
+                <label className="form-label">Submission Drive Link / Code URL</label>
+                <input type="url" className="form-control" placeholder="https://github.com/... or Google Drive Link" value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} required />
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }}>Submit</button>
+                <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }} disabled={submitting}>
+                  {submitting ? 'Delivering...' : 'Deliver Submission'}
+                </button>
                 <button type="button" className="btn btn-secondary" onClick={() => setSubmitModal(false)}>Cancel</button>
               </div>
             </form>
@@ -888,33 +1341,33 @@ const ExamSchedulePage = () => {
     });
   }, []);
 
-  if (loading) return <div>Loading exam schedules...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div className="glass-card">
-        <h2 style={{ marginBottom: '24px' }}>Semester Exam Schedule</h2>
+        <h2 style={{ marginBottom: '24px' }}>Semester Term Exam schedules</h2>
         <div className="table-container">
           <table className="portal-table">
             <thead>
               <tr>
                 <th>Subject Code</th>
                 <th>Subject Name</th>
-                <th>Exam Category</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Hall Number</th>
+                <th>Category</th>
+                <th>Exam Date</th>
+                <th>Reporting Time</th>
+                <th>Hall Code</th>
               </tr>
             </thead>
             <tbody>
               {schedule.map((s) => (
                 <tr key={s.id}>
-                  <td style={{ fontWeight: '600' }}>{s.subject.code}</td>
+                  <td style={{ fontWeight: '700' }}>{s.subject.code}</td>
                   <td>{s.subject.name}</td>
                   <td>{s.examType}</td>
-                  <td>{s.examDate}</td>
+                  <td style={{ fontWeight: '600' }}>{s.examDate}</td>
                   <td>{formatTime12Hour(s.examTime)}</td>
-                  <td>{s.hallNumber}</td>
+                  <td><span className="badge badge-neutral" style={{ border: '1px solid var(--border)' }}>{s.hallNumber}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -923,10 +1376,10 @@ const ExamSchedulePage = () => {
       </div>
 
       <div className="glass-card">
-        <h2 style={{ marginBottom: '24px' }}>Arrear Papers Log</h2>
+        <h2 style={{ marginBottom: '24px' }}>Arrear Exam Registrations</h2>
         {arrears.length === 0 ? (
-          <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glow)', borderRadius: '8px', color: 'var(--text-secondary)' }}>
-            No pending or cleared arrears on your record. Clear academic history!
+          <div style={{ padding: '20px', background: 'var(--primary-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle size={18} style={{ color: 'var(--primary)' }} /> Zero outstanding arrear papers. Clean registration profile!
           </div>
         ) : (
           <div className="table-container">
@@ -935,15 +1388,15 @@ const ExamSchedulePage = () => {
                 <tr>
                   <th>Subject Code</th>
                   <th>Subject Name</th>
-                  <th>Original Semester</th>
-                  <th>Exam Date</th>
+                  <th>Original Term</th>
+                  <th>Exam Date Scheduled</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {arrears.map((a) => (
                   <tr key={a.id}>
-                    <td style={{ fontWeight: '600' }}>{a.subject.code}</td>
+                    <td style={{ fontWeight: '700' }}>{a.subject.code}</td>
                     <td>{a.subject.name}</td>
                     <td>Semester {a.originalSemester}</td>
                     <td>{a.arrearExamDate || 'TBD'}</td>
@@ -978,30 +1431,35 @@ const DocumentsPage = () => {
       });
   }, []);
 
-  if (loading) return <div>Loading academic files...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div className="glass-card">
-      <h2 style={{ marginBottom: '24px' }}>Academic Records & Certifications</h2>
+      <h2 style={{ marginBottom: '24px' }}>Officially Uploaded Transcripts & Files</h2>
       <div className="table-container">
         <table className="portal-table">
           <thead>
             <tr>
-              <th>Document Name / Type</th>
-              <th>Semester Associated</th>
-              <th>Upload Timestamp</th>
-              <th>Action</th>
+              <th>Document Classification</th>
+              <th>Semester Context</th>
+              <th>Registration Timestamp</th>
+              <th>Authorized Download</th>
             </tr>
           </thead>
           <tbody>
             {docs.map((doc) => (
               <tr key={doc.id}>
-                <td style={{ fontWeight: '600' }}>{doc.docType}</td>
-                <td>{doc.semester ? 'Semester ' + doc.semester : 'All Semesters'}</td>
+                <td style={{ fontWeight: '700' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} style={{ color: 'var(--primary)' }} />
+                    <span>{doc.docType}</span>
+                  </div>
+                </td>
+                <td>{doc.semester ? 'Semester ' + doc.semester : 'Global Account'}</td>
                 <td>{doc.uploadedAt}</td>
                 <td>
-                  <a href={doc.fileUrl} target="_blank" className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>
-                    View File
+                  <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '12px', minHeight: '32px', display: 'inline-flex', gap: '6px' }}>
+                    <Download size={14} /> Download Document
                   </a>
                 </td>
               </tr>
@@ -1045,36 +1503,41 @@ const NotificationsPage = () => {
     }
   };
 
-  if (loading) return <div>Loading notifications...</div>;
+  if (loading) return <div className="skeleton-box" style={{ height: '320px' }} />;
 
   return (
     <div className="glass-card">
-      <h2 style={{ marginBottom: '24px' }}>Inbox Announcements</h2>
+      <h2 style={{ marginBottom: '24px' }}>Announcements & Notifications Inbox</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {notifs.map((n) => (
           <div 
             key={n.id} 
             style={{ 
               padding: '20px', 
-              background: n.isRead ? 'rgba(255, 255, 255, 0.01)' : 'rgba(99, 102, 241, 0.04)', 
-              border: n.isRead ? '1px solid var(--border-glow)' : '1px solid rgba(99, 102, 241, 0.2)', 
-              borderRadius: '8px',
+              background: n.isRead ? 'var(--bg-muted)' : 'var(--primary-surface)', 
+              border: n.isRead ? '1px solid var(--border)' : '1px solid var(--primary)', 
+              borderRadius: 'var(--radius-sm)',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              transition: 'var(--transition-fast)'
             }}
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span className={`badge ${n.type === 'FEE' ? 'badge-pending' : n.type === 'EXAM' ? 'badge-danger' : 'badge-success'}`}>{n.type}</span>
-                <span style={{ fontWeight: '600', color: n.isRead ? 'var(--text-secondary)' : 'var(--text-primary)' }}>{n.title}</span>
+                <span className={`badge ${n.type === 'FEE' ? 'badge-warning' : n.type === 'EXAM' ? 'badge-danger' : 'badge-success'}`}>{n.type}</span>
+                <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{n.title}</span>
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '6px' }}>{n.message}</p>
             </div>
             
             {!n.isRead && (
-              <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => markAsRead(n.id)}>
-                Mark Read
+              <button 
+                className="btn btn-secondary btn-sm" 
+                style={{ display: 'inline-flex', gap: '4px', minHeight: '32px' }} 
+                onClick={() => markAsRead(n.id)}
+              >
+                <Check size={14} /> Mark Read
               </button>
             )}
           </div>

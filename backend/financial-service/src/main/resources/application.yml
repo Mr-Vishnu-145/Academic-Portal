@@ -1,0 +1,28 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: financial-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/academic_portal?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+  sql:
+    init:
+      mode: never
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:4d617468656d6174696373416e64436f6d7075746572536369656e6365526f636b735f5f5f5f5f5f5f5f5f5f}
+    expiration: ${JWT_EXPIRATION:86400000}
