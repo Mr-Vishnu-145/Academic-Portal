@@ -974,7 +974,7 @@ a:hover { opacity: 0.8; }
 /* ── Calendar Redesign ───────────────────────────────────────────────────── */
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   text-align: center;
 }
@@ -1359,3 +1359,533 @@ input::-ms-clear {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-glow);
 }
+
+/* ── Revamped Staff Dashboard Styles ─────────────────────────────────────── */
+.dashboard-split-layout {
+  display: grid;
+  grid-template-columns: 4.5fr 5.5fr;
+  gap: 28px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-split-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Widgets Headers & Layout */
+.dashboard-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.widget-card {
+  background: var(--bg-surface);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-ui);
+  position: relative;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg), 0 0 16px var(--primary-glow);
+}
+
+.widget-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.widget-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.btn-circle-add {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-surface-solid);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-circle-add:hover {
+  background: var(--primary-surface);
+  color: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.08) rotate(90deg);
+}
+
+/* Filter Chips */
+.filter-chips-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  user-select: none;
+}
+
+.filter-chip:hover {
+  background: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--text-primary);
+  color: var(--bg-app);
+  border-color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-chip.active {
+  background: var(--primary);
+  color: var(--bg-app);
+  border-color: var(--primary);
+}
+
+/* Task Cards */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-task-card {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: var(--transition-fast);
+  position: relative;
+  cursor: pointer;
+}
+
+.dashboard-task-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-surface-solid);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xs);
+}
+
+.task-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.task-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.task-card-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.task-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.task-comments-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+/* Custom progress bar in task card */
+.task-progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+}
+
+.task-progress-bar {
+  height: 100%;
+  background-size: 20px 20px;
+  background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+  transition: width var(--duration-normal) var(--ease-out);
+  border-radius: var(--radius-pill);
+}
+
+.task-progress-todo {
+  background-color: var(--info);
+  width: 15%;
+}
+
+.task-progress-inprogress {
+  background-color: var(--warning);
+  width: 55%;
+  animation: progress-bar-stripes 1s linear infinite;
+}
+
+.task-progress-done {
+  background-color: var(--success);
+  width: 100%;
+}
+
+@keyframes progress-bar-stripes {
+  from { background-position: 0 0; }
+  to { background-position: 20px 0; }
+}
+
+.btn-view-all {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  margin-top: 16px;
+  user-select: none;
+}
+
+.btn-view-all:hover {
+  background: var(--primary-surface);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Task Badges */
+.task-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+}
+
+.task-badge-todo {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+[data-theme="dark"] .task-badge-todo {
+  background: rgba(167, 139, 250, 0.15);
+  color: #a78bfa;
+}
+
+.task-badge-inprogress {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+[data-theme="dark"] .task-badge-inprogress {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.task-badge-done {
+  background: var(--success-surface);
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Notes Grid */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 640px) {
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.note-card {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 150px;
+  position: relative;
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.note-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.note-card-title {
+  font-size: 15px;
+  font-weight: 750;
+  margin: 0;
+  padding-right: 28px; /* Room for dots menu */
+}
+
+.note-card-content {
+  font-size: 13px;
+  line-height: 1.45;
+  flex-grow: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.note-card-date {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.note-actions-trigger {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  padding: 4px;
+}
+
+.note-actions-trigger:hover {
+  opacity: 1;
+}
+
+/* Colors for Notes matching the designs in reference */
+.note-theme-green {
+  background-color: #dcfce7;
+  color: #14532d;
+  border-color: rgba(22, 101, 52, 0.15);
+}
+
+[data-theme="dark"] .note-theme-green {
+  background-color: #022c22;
+  color: #6ee7b7;
+  border-color: rgba(110, 231, 183, 0.15);
+}
+
+.note-theme-purple {
+  background-color: #f3e8ff;
+  color: #581c87;
+  border-color: rgba(88, 28, 135, 0.15);
+}
+
+[data-theme="dark"] .note-theme-purple {
+  background-color: #2e1065;
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.15);
+}
+
+.note-theme-peach {
+  background-color: #ffedd5;
+  color: #7c2d12;
+  border-color: rgba(124, 45, 18, 0.15);
+}
+
+[data-theme="dark"] .note-theme-peach {
+  background-color: #431407;
+  color: #fdba74;
+  border-color: rgba(253, 186, 116, 0.15);
+}
+
+.note-theme-blue {
+  background-color: #dbeafe;
+  color: #1e3a8a;
+  border-color: rgba(30, 58, 138, 0.15);
+}
+
+[data-theme="dark"] .note-theme-blue {
+  background-color: #172554;
+  color: #93c5fd;
+  border-color: rgba(147, 197, 253, 0.15);
+}
+
+/* Color Circle Picker in Note Modal */
+.color-picker-container {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.color-option-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: 2px solid transparent;
+}
+
+.color-option-btn:hover {
+  transform: scale(1.15);
+}
+
+.color-option-btn.selected {
+  border-color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+/* Schedule Timetable */
+.schedule-table-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--divider);
+  gap: 16px;
+  transition: var(--transition-fast);
+}
+
+.schedule-table-row:last-child {
+  border-bottom: none;
+}
+
+.schedule-table-row:hover {
+  background: var(--table-row-hover);
+}
+
+.schedule-cell-time {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.schedule-cell-lesson {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1.5;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-cell-teacher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1.5;
+  min-width: 0;
+}
+
+.schedule-teacher-avatar-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-surface);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.schedule-teacher-name-text {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.schedule-cell-location {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  width: 120px;
+  text-align: right;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .schedule-table-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .schedule-cell-time {
+    width: 100%;
+  }
+  .schedule-cell-lesson {
+    flex-grow: 1;
+  }
+  .schedule-cell-teacher {
+    width: 50%;
+  }
+  .schedule-cell-location {
+    width: 40%;
+    text-align: right;
+  }
+}
+

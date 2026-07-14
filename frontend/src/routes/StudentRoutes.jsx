@@ -7,7 +7,7 @@ import {
   CheckCircle, XCircle, AlertCircle, FileText, Download, Play, 
   CreditCard, BookOpen, Clock, Calendar, CheckSquare, Award,
   Sparkles, Send, MoveUp, MoveDown, Minimize2, Maximize2, Trash2, Check, RefreshCw, ArrowLeft,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Plus, Edit2, MessageSquare, X
 } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 
@@ -26,6 +26,13 @@ const formatTime12Hour = (timeStr) => {
   const strHours = hours < 10 ? '0' + hours : hours;
   return `${strHours}:${minutes} ${ampm}`;
 };
+
+const COMMON_EVENTS = [
+  { id: 'common-1', date: '2026-07-01', title: '🎓 Semester Orientation', color: 'var(--primary)', details: 'Welcome session for all students and faculty.' },
+  { id: 'common-2', date: '2026-08-15', title: '🇮🇳 Holiday: Independence Day', color: 'var(--danger)', details: 'National holiday. Campus offices closed.' },
+  { id: 'common-3', date: '2026-08-20', title: '🎵 Annual Cultural Festival', color: 'var(--accent)', details: 'Inter-departmental music, dance, and arts fest.' },
+  { id: 'common-4', date: '2026-07-28', title: '💡 Tech Symposium 2026', color: 'var(--success)', details: 'Paper presentations and hackathon events.' }
+];
 
 // Central Student Layout Shell
 const StudentLayout = ({ children }) => {
@@ -158,9 +165,201 @@ const StudentDashboard = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDayEvents, setSelectedDayEvents] = useState(null);
 
+  // Custom private events state
+  const [privateEvents, setPrivateEvents] = useState(() => {
+    const saved = localStorage.getItem(`private_calendar_events_student_${user?.id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDetails, setNewEventDetails] = useState('');
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`private_calendar_events_student_${user.id}`, JSON.stringify(privateEvents));
+    }
+  }, [privateEvents, user]);
+
+  const handleAddPrivateEvent = (date) => {
+    if (!newEventTitle.trim()) return;
+    const newEvt = {
+      id: `pvt-${Date.now()}`,
+      date: date,
+      title: `📌 ${newEventTitle.trim()}`,
+      color: 'var(--accent)',
+      details: newEventDetails.trim() || 'Private event note',
+      isPrivate: true
+    };
+    const updated = [...privateEvents, newEvt];
+    setPrivateEvents(updated);
+    setNewEventTitle('');
+    setNewEventDetails('');
+    
+    if (selectedDayEvents) {
+      setSelectedDayEvents(prev => ({
+        ...prev,
+        events: [...prev.events, newEvt]
+      }));
+    }
+  };
+
+  const handleDeletePrivateEvent = (eventId) => {
+    const updated = privateEvents.filter(e => e.id !== eventId);
+    setPrivateEvents(updated);
+    if (selectedDayEvents) {
+      setSelectedDayEvents(prev => ({
+        ...prev,
+        events: prev.events.filter(e => e.id !== eventId)
+      }));
+    }
+  };
+
   // Widget ordering and states
-  const [widgetOrder, setWidgetOrder] = useState(['schedule', 'quickLinks', 'calendar', 'aiAssistant']);
+  const [widgetOrder, setWidgetOrder] = useState(['schedule', 'quickLinks', 'calendar', 'aiAssistant', 'myTasks']);
   const [collapsedWidgets, setCollapsedWidgets] = useState({});
+
+  // Tasks state
+  const [tasks, setTasks] = useState(() => {
+    const saved = localStorage.getItem(`student_tasks_${user?.id}`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [
+      { 
+        id: 1, 
+        title: 'Complete DBMS Lab Exercise', 
+        subject: 'Database Systems', 
+        dueDate: '2026-07-20', 
+        status: 'inprogress',
+        comments: [
+          { id: 101, author: 'Faculty Staff', text: 'Please submit the SQL query joins screenshot in the report.', date: 'Jul 10, 11:30 AM' }
+        ]
+      },
+      { 
+        id: 2, 
+        title: 'Submit English Literature assignment', 
+        subject: 'English', 
+        dueDate: '2026-07-25', 
+        status: 'todo',
+        comments: [] 
+      }
+    ];
+  });
+
+  const [activeTaskFilter, setActiveTaskFilter] = useState('all');
+  const [showAllTasks, setShowAllTasks] = useState(false);
+
+  // Modal states for Tasks
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskSubject, setTaskSubject] = useState('');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [taskStatus, setTaskStatus] = useState('todo');
+  const [taskCommentsList, setTaskCommentsList] = useState([]);
+  const [newCommentText, setNewCommentText] = useState('');
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`student_tasks_${user.id}`, JSON.stringify(tasks));
+    }
+  }, [tasks, user]);
+
+  // Task handlers
+  const handleSaveTask = (e) => {
+    e.preventDefault();
+    if (!taskTitle.trim() || !taskSubject.trim() || !taskDueDate) {
+      alert('Please fill out all required task fields.');
+      return;
+    }
+    if (editingTask) {
+      setTasks(tasks.map(t => t.id === editingTask.id ? {
+        ...t,
+        title: taskTitle,
+        subject: taskSubject,
+        dueDate: taskDueDate,
+        status: taskStatus,
+        comments: taskCommentsList
+      } : t));
+    } else {
+      const newTask = {
+        id: Date.now(),
+        title: taskTitle,
+        subject: taskSubject,
+        dueDate: taskDueDate,
+        status: taskStatus,
+        comments: []
+      };
+      setTasks([newTask, ...tasks]);
+    }
+    setTaskModalOpen(false);
+    setEditingTask(null);
+    resetTaskForm();
+  };
+
+  const handleEditTask = (task, e) => {
+    e.stopPropagation();
+    setEditingTask(task);
+    setTaskTitle(task.title);
+    setTaskSubject(task.subject);
+    setTaskDueDate(task.dueDate);
+    setTaskStatus(task.status);
+    setTaskCommentsList(task.comments || []);
+    setNewCommentText('');
+    setTaskModalOpen(true);
+  };
+
+  const handleDeleteTask = (taskId, e) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      setTasks(tasks.filter(t => t.id !== taskId));
+    }
+  };
+
+  const cycleTaskStatus = (taskId, e) => {
+    e.stopPropagation();
+    setTasks(tasks.map(t => {
+      if (t.id === taskId) {
+        let newStatus = 'todo';
+        if (t.status === 'todo') newStatus = 'inprogress';
+        else if (t.status === 'inprogress') newStatus = 'done';
+        return { ...t, status: newStatus };
+      }
+      return t;
+    }));
+  };
+
+  const handleAddComment = () => {
+    if (!newCommentText.trim()) return;
+    const newComment = {
+      id: Date.now(),
+      author: user?.name || 'Student',
+      text: newCommentText.trim(),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+    };
+    const updatedComments = [...taskCommentsList, newComment];
+    setTaskCommentsList(updatedComments);
+    setNewCommentText('');
+    
+    if (editingTask) {
+      setTasks(prevTasks => prevTasks.map(t => t.id === editingTask.id ? {
+        ...t,
+        comments: updatedComments
+      } : t));
+    }
+  };
+
+  const resetTaskForm = () => {
+    setTaskTitle('');
+    setTaskSubject('');
+    setTaskDueDate('');
+    setTaskStatus('todo');
+    setTaskCommentsList([]);
+    setNewCommentText('');
+  };
 
   useEffect(() => {
     // 1. Fetch dashboard stats
@@ -375,7 +574,7 @@ const StudentDashboard = () => {
       };
 
       // Gather events
-      const allEvents = [];
+      const allEvents = [...COMMON_EVENTS, ...privateEvents];
       exams.forEach(ex => {
         if (ex.examDate) allEvents.push({ id: `ex-${ex.id}`, date: ex.examDate, title: `📝 ${ex.subject.code} Exam`, color: 'var(--primary)', details: `Time: ${ex.examTime.substring(0,5)} | Hall: ${ex.hallNumber}` });
       });
@@ -441,26 +640,6 @@ const StudentDashboard = () => {
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <span key={i} className="calendar-day-header">{day}</span>)}
                 {gridCells}
               </div>
-              
-              {/* Event Details Modal */}
-              {selectedDayEvents && selectedDayEvents.events.length > 0 && (
-                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <div className="glass-card" style={{ width: '360px', padding: '24px', position: 'relative' }}>
-                    <button className="theme-toggle-btn" style={{ position: 'absolute', top: '16px', right: '16px' }} onClick={() => setSelectedDayEvents(null)}>
-                      <XCircle size={20} />
-                    </button>
-                    <h3 style={{ marginBottom: '16px' }}>Events on {selectedDayEvents.date}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {selectedDayEvents.events.map(evt => (
-                        <div key={evt.id} style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-sm)', borderLeft: `4px solid ${evt.color}` }}>
-                          <div style={{ fontWeight: '700', color: evt.color, marginBottom: '4px' }}>{evt.title}</div>
-                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{evt.details}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -503,6 +682,99 @@ const StudentDashboard = () => {
                   <Send size={16} />
                 </button>
               </form>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (widgetId === 'myTasks') {
+      const filteredTasks = tasks.filter(t => activeTaskFilter === 'all' || t.status === activeTaskFilter);
+      const displayedTasks = showAllTasks ? filteredTasks : filteredTasks.slice(0, 4);
+
+      return (
+        <div className="glass-card widget-movable" key="myTasks" style={{ gridColumn: 'span 2' }}>
+          <div className="widget-header">
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckSquare size={18} style={{ color: 'var(--primary)' }} />
+              My Tasks
+            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button 
+                type="button"
+                className="btn-circle-add" 
+                title="Add Task" 
+                onClick={() => { resetTaskForm(); setEditingTask(null); setTaskModalOpen(true); }}
+                style={{ width: '24px', height: '24px', borderRadius: '50%', border: 'none', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <Plus size={14} />
+              </button>
+              {widgetControls}
+            </div>
+          </div>
+          {!isCollapsed && (
+            <div>
+              {/* Filter Chips */}
+              <div className="filter-chips-container" style={{ marginBottom: '16px' }}>
+                <button className={`filter-chip ${activeTaskFilter === 'all' ? 'active' : ''}`} onClick={() => { setActiveTaskFilter('all'); setShowAllTasks(false); }}>All task</button>
+                <button className={`filter-chip ${activeTaskFilter === 'todo' ? 'active' : ''}`} onClick={() => { setActiveTaskFilter('todo'); setShowAllTasks(false); }}>To do</button>
+                <button className={`filter-chip ${activeTaskFilter === 'inprogress' ? 'active' : ''}`} onClick={() => { setActiveTaskFilter('inprogress'); setShowAllTasks(false); }}>In progress</button>
+                <button className={`filter-chip ${activeTaskFilter === 'done' ? 'active' : ''}`} onClick={() => { setActiveTaskFilter('done'); setShowAllTasks(false); }}>Done</button>
+              </div>
+
+              {/* Tasks List */}
+              <div className="task-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {displayedTasks.length === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center', padding: '24px 0' }}>No tasks found.</div>
+                ) : (
+                  displayedTasks.map(t => (
+                    <div key={t.id} className="dashboard-task-card" onClick={(e) => handleEditTask(t, e)} style={{ cursor: 'pointer' }}>
+                      <div className="task-card-header">
+                        <div>
+                          <h4 className="task-card-title">{t.title}</h4>
+                          <span className="task-card-subtitle">{t.subject}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span 
+                            className={`task-badge task-badge-${t.status.toLowerCase()}`}
+                            title="Click to cycle status"
+                            onClick={(e) => cycleTaskStatus(t.id, e)}
+                          >
+                            {t.status === 'todo' ? 'To do' : t.status === 'inprogress' ? 'In progress' : 'Done'}
+                          </span>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button className="theme-toggle-btn" style={{ padding: '4px', minHeight: '24px', border: 'none', background: 'transparent' }} title="Edit Task" onClick={(e) => handleEditTask(t, e)}>
+                              <Edit2 size={12} style={{ color: 'var(--text-muted)' }} />
+                            </button>
+                            <button className="theme-toggle-btn" style={{ padding: '4px', minHeight: '24px', border: 'none', background: 'transparent' }} title="Delete Task" onClick={(e) => handleDeleteTask(t.id, e)}>
+                              <Trash2 size={12} style={{ color: 'var(--danger)' }} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Indicator */}
+                      <div className="task-progress-bar-container">
+                        <div className={`task-progress-bar task-progress-${t.status.toLowerCase()}`} />
+                      </div>
+
+                      {/* Footer */}
+                      <div className="task-card-footer">
+                        <span>{t.dueDate ? new Date(t.dueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                        <div className="task-comments-count">
+                          <MessageSquare size={13} />
+                          <span>{t.comments && t.comments.length > 0 ? `${t.comments.length} comments` : 'No comments'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {filteredTasks.length > 4 && !showAllTasks && (
+                  <button className="btn btn-secondary" onClick={() => setShowAllTasks(true)} style={{ width: '100%', marginTop: '8px', padding: '10px' }}>
+                    Show All Tasks ({filteredTasks.length})
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -625,6 +897,194 @@ const StudentDashboard = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
         {widgetOrder.map((wId, idx) => renderWidget(wId, idx))}
       </div>
+
+      {/* Task Form Modal */}
+      {taskModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', zIndex: 100, justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: editingTask ? '500px' : '420px', maxWidth: '100%', background: 'var(--bg-surface-solid)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="widget-header">
+              <h3>{editingTask ? 'Edit Task Details' : 'Add New Task'}</h3>
+              <button onClick={() => { setTaskModalOpen(false); setEditingTask(null); resetTaskForm(); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleSaveTask}>
+              <div className="form-group">
+                <label className="form-label">Task Title</label>
+                <input type="text" className="form-control" placeholder="e.g. Read poem & answer questions" value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Course / Subject Name</label>
+                <input type="text" className="form-control" placeholder="e.g. English Literature" value={taskSubject} onChange={(e) => setTaskSubject(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Due Date</label>
+                <input type="date" className="form-control" value={taskDueDate} onChange={(e) => setTaskDueDate(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Task Status</label>
+                <CustomSelect 
+                  value={taskStatus} 
+                  onChange={(e) => setTaskStatus(e.target.value)}
+                  options={[
+                    { value: 'todo', label: 'To do' },
+                    { value: 'inprogress', label: 'In progress' },
+                    { value: 'done', label: 'Done' }
+                  ]}
+                />
+              </div>
+              
+              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }}>
+                  {editingTask ? 'Update Task' : 'Create Task'}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setTaskModalOpen(false); setEditingTask(null); resetTaskForm(); }}>Cancel</button>
+              </div>
+            </form>
+
+            {/* Real Comments Discussion Board */}
+            {editingTask && (
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700' }}>
+                  <MessageSquare size={16} />
+                  <span>Discussion ({taskCommentsList.length})</span>
+                </h4>
+                
+                {/* Comments List */}
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '10px', 
+                  maxHeight: '180px', 
+                  overflowY: 'auto', 
+                  marginBottom: '16px',
+                  paddingRight: '4px',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-xs)',
+                  padding: '8px',
+                  background: 'var(--bg-input)'
+                }}>
+                  {taskCommentsList.length === 0 ? (
+                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: '12px 0' }}>No comments yet. Start the conversation!</p>
+                  ) : (
+                    taskCommentsList.map(c => (
+                      <div key={c.id} style={{ background: 'var(--bg-surface-solid)', padding: '10px', borderRadius: 'var(--radius-xs)', fontSize: '13px', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px', fontWeight: '700' }}>
+                          <span style={{ color: 'var(--primary)' }}>{c.author}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{c.date}</span>
+                        </div>
+                        <div style={{ color: 'var(--text-primary)', lineHeight: '1.4' }}>{c.text}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* New Comment Input */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    placeholder="Write a reply..."
+                    style={{ padding: '8px 12px', fontSize: '13px' }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddComment();
+                      }
+                    }}
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-primary" 
+                    onClick={handleAddComment}
+                    style={{ padding: '8px 16px', fontSize: '13px', minHeight: '36px' }}
+                  >
+                    Post
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Event Details Modal */}
+      {selectedDayEvents && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div className="glass-card" style={{ width: '400px', background: 'var(--bg-surface-solid)', padding: '24px', position: 'relative' }}>
+            <button className="theme-toggle-btn" style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer' }} onClick={() => setSelectedDayEvents(null)}>
+              <XCircle size={20} style={{ color: 'var(--text-muted)' }} />
+            </button>
+            <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: '700' }}>Events on {selectedDayEvents.date}</h3>
+            
+            {/* Events List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto', marginBottom: '16px', paddingRight: '4px' }}>
+              {selectedDayEvents.events.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: '12px 0' }}>No academic events or reminders on this day.</p>
+              ) : (
+                selectedDayEvents.events.map(evt => (
+                  <div key={evt.id} style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-sm)', borderLeft: `4px solid ${evt.color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ flexGrow: 1 }}>
+                      <div style={{ fontWeight: '700', color: evt.color, marginBottom: '4px', fontSize: '13.5px' }}>{evt.title}</div>
+                      <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{evt.details}</div>
+                    </div>
+                    {evt.isPrivate && (
+                      <button 
+                        type="button" 
+                        onClick={(e) => { e.stopPropagation(); handleDeletePrivateEvent(evt.id); }} 
+                        style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                        title="Delete Private Event"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Add Private Event Form */}
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} />
+                <span>Add Private Event</span>
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  placeholder="Event title..." 
+                  value={newEventTitle} 
+                  onChange={e => setNewEventTitle(e.target.value)} 
+                  style={{ padding: '8px 12px', fontSize: '13px' }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddPrivateEvent(selectedDayEvents.date);
+                    }
+                  }}
+                />
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  placeholder="Short detail (optional)..." 
+                  value={newEventDetails} 
+                  onChange={e => setNewEventDetails(e.target.value)} 
+                  style={{ padding: '8px 12px', fontSize: '13px' }}
+                />
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={() => handleAddPrivateEvent(selectedDayEvents.date)} 
+                  style={{ padding: '8px 16px', fontSize: '13px', minHeight: '36px' }}
+                >
+                  Add Event
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -10,7 +10,7 @@ import StudentRoutes from './routes/StudentRoutes';
 import StaffRoutes from './routes/StaffRoutes';
 import HodRoutes from './routes/HodRoutes';
 import AdminRoutes from './routes/AdminRoutes';
-import { Menu, Moon, Sun, Search, Bell, Sparkles, Command, ShieldAlert, CheckCircle, GraduationCap } from 'lucide-react';
+import { Menu, Moon, Sun, Bell, Sparkles, ShieldAlert, CheckCircle, GraduationCap } from 'lucide-react';
 
 // Layout wrapper that conditionally renders the Sidebar for logged-in users
 const MainLayout = ({ children }) => {
@@ -19,7 +19,6 @@ const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
@@ -181,20 +180,7 @@ const MainLayout = ({ children }) => {
               <Menu size={22} />
             </button>
 
-            {/* Premium Search Bar */}
-            <div className="navbar-search-group">
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input 
-                type="text" 
-                className="navbar-search-input" 
-                placeholder="Search resources, marks..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: 'var(--text-muted)', border: '1px solid var(--border)', padding: '2px 4px', borderRadius: '4px', background: 'var(--bg-muted)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                <Command size={10} /> K
-              </span>
-            </div>
+
           </div>
 
           <div className="navbar-actions">
